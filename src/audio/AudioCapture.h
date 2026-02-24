@@ -1,6 +1,9 @@
 #pragma once
 #include <atomic>
 #include <vector>
+#include <mutex>
+#include <thread>
+#include <portaudio.h>
 
 // Captures system audio output (loopback) via PortAudio
 // Linux:   PipeWire / PulseAudio loopback device
@@ -16,6 +19,26 @@ public:
     std::vector<float> readSamples();
 
 private:
+    static int paCallback(const void* inputBuffer, void* outputBuffer,
+                          unsigned long framesPerBuffer,
+                          const PaStreamCallbackTimeInfo* timeInfo,
+                          PaStreamCallbackFlags statusFlags,
+                          void* userData);
+
+    void pushSamples(const float* input, unsigned long frames);
+
     std::atomic<bool> running_{ false };
-    // PaStream* stream_ will be added in Session 2
+    PaStream* stream_{ nullptr };
+    std::thread simulationThread_;
+
+    // Ring Buffer settings
+    static constexpr size_t RING_BUFFER_SIZE = 8192;
+    static constexpr size_t READ_SIZE = 1024;
+    static constexpr double SAMPLE_RATE = 44100.0;
+
+    std::vector<float> ringBuffer_;
+    size_t writePos_{ 0 };
+    size_t readPos_{ 0 };
+    size_t count_{ 0 };
+    mutable std::mutex bufferMutex_;
 };
