@@ -14,9 +14,10 @@ if(NOT portaudio_FOUND)
 endif()
 
 # FFTW3: Try find_package first, fallback to pkg-config
-find_package(FFTW3 QUIET)
-if(NOT FFTW3_FOUND)
-    pkg_check_modules(FFTW3 REQUIRED fftw3)
+# We need the float version (fftw3f) for single precision
+find_package(FFTW3f QUIET)
+if(NOT FFTW3f_FOUND)
+    pkg_check_modules(FFTW3 REQUIRED fftw3f)
 endif()
 
 find_package(OpenGL REQUIRED)
@@ -62,7 +63,9 @@ else()
 endif()
 
 # Link FFTW3
-if(TARGET FFTW3::fftw3)
+if(TARGET FFTW3f::fftw3f)
+    target_link_libraries(loopin-ambience-mode PRIVATE FFTW3f::fftw3f)
+elseif(TARGET FFTW3::fftw3)
     target_link_libraries(loopin-ambience-mode PRIVATE FFTW3::fftw3)
 else()
     target_link_libraries(loopin-ambience-mode PRIVATE ${FFTW3_LIBRARIES})
@@ -79,6 +82,16 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         src/platform/WindowsPlatform.cpp)
     target_link_libraries(loopin-ambience-mode PRIVATE
         dwmapi)
+endif()
+
+# Test target
+add_executable(loopin-ambience-fft-test src/audio/fft_test.cpp src/audio/FFTProcessor.cpp)
+if(TARGET FFTW3f::fftw3f)
+    target_link_libraries(loopin-ambience-fft-test PRIVATE FFTW3f::fftw3f)
+elseif(TARGET FFTW3::fftw3)
+    target_link_libraries(loopin-ambience-fft-test PRIVATE FFTW3::fftw3)
+else()
+    target_link_libraries(loopin-ambience-fft-test PRIVATE ${FFTW3_LIBRARIES})
 endif()
 
 # Post-build copy commands
