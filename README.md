@@ -14,6 +14,49 @@ A cross-platform desktop application that renders an ambient lighting effect alo
 - GLAD
 - nlohmann/json
 
+## Installing Dependencies
+
+### Linux (Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  build-essential \
+  cmake \
+  portaudio19-dev \
+  libfftw3-dev \
+  libglfw3-dev \
+  libgl1-mesa-dev \
+  nlohmann-json3-dev \
+  libx11-dev \
+  libxfixes-dev
+```
+
+### Linux (Fedora/RHEL)
+```bash
+sudo dnf install -y \
+  gcc-c++ \
+  make \
+  cmake \
+  portaudio-devel \
+  fftw-devel \
+  glfw-devel \
+  mesa-libGL-devel \
+  nlohmann_json-devel \
+  libX11-devel \
+  libXfixes-devel
+```
+
+### macOS
+```bash
+brew install cmake portaudio fftw glfw3 nlohmann-json
+```
+
+### Windows
+Use vcpkg to install dependencies:
+```bash
+vcpkg install portaudio:x64-windows fftw3:x64-windows glfw3:x64-windows nlohmann-json:x64-windows
+```
+
 ## Build Instructions
 
 ### Linux
