@@ -1,4 +1,7 @@
 #pragma once
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include "Shader.h"
 
 // Manages the fullscreen borderless OpenGL overlay window
 // Window properties:
@@ -17,5 +20,10 @@ public:
     bool shouldClose() const;
 
 private:
-    // GLFWwindow* window_ will be added in Session 4
+    GLFWwindow* window_ = nullptr;
+    int width_ = 0;
+    int height_ = 0;
+    unsigned int VAO_ = 0;
+    unsigned int VBO_ = 0;
+    Shader shader_;
 };

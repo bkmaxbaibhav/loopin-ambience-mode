@@ -1,5 +1,4 @@
 #version 330 core
-// TODO Session 4: fullscreen quad vertex shader
 layout (location = 0) in vec2 aPos;
 out vec2 vUV;
 void main() {
