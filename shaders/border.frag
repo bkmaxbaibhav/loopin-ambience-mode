@@ -1,17 +1,24 @@
 #version 330 core
-// TODO Session 4: edge glow fragment shader
-// TODO Session 5: connect band uniforms
-// TODO Session 6: implement color modes
-uniform float uBass;
-uniform float uMid;
-uniform float uTreble;
-uniform float uTime;
-uniform float uIntensity;
-uniform float uEdgeWidth;
-uniform int   uColorMode;
-uniform vec3  uPrimaryColor;
-in  vec2 vUV;
 out vec4 FragColor;
+in vec2 vUV;
+
+uniform vec2  uResolution;
+uniform float uEdgeWidth;
+uniform float uIntensity;
+uniform vec3  uPrimaryColor;
+
 void main() {
-    FragColor = vec4(0.0); // transparent stub
+    float distLeft   = vUV.x * uResolution.x;
+    float distRight  = (1.0 - vUV.x) * uResolution.x;
+    float distTop    = vUV.y * uResolution.y;
+    float distBottom = (1.0 - vUV.y) * uResolution.y;
+    float minDist    = min(min(distLeft, distRight),
+                          min(distTop, distBottom));
+
+    if (minDist > uEdgeWidth) discard;
+
+    float glow = exp(-minDist * minDist /
+                     (uEdgeWidth * uEdgeWidth * 0.5));
+
+    FragColor = vec4(uPrimaryColor * glow * uIntensity, glow);
 }
