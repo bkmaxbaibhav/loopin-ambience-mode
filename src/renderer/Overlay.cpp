@@ -1,6 +1,7 @@
 #include "Overlay.h"
 #include <iostream>
 #include <vector>
+#include <chrono>
 
 Overlay::Overlay()  {}
 Overlay::~Overlay() { shutdown(); }
@@ -83,6 +84,8 @@ bool Overlay::init() {
         return false;
     }
 
+    appStart_ = std::chrono::steady_clock::now();
+
     return true;
 }
 
@@ -99,9 +102,19 @@ void Overlay::render(float bass, float mid, float treble) {
 
     shader_.use();
     shader_.setVec2("uResolution", (float)width_, (float)height_);
+
+    auto now = std::chrono::steady_clock::now();
+    float time = std::chrono::duration<float>(now - appStart_).count();
+    shader_.setFloat("uTime", time);
+
     shader_.setFloat("uEdgeWidth", 12.0f);
     shader_.setFloat("uIntensity", 0.8f);
     shader_.setVec3("uPrimaryColor", 0.48f, 0.18f, 1.0f);
+
+    shader_.setFloat("uIntensityTop", 0.8f);
+    shader_.setFloat("uIntensityBottom", 0.8f);
+    shader_.setFloat("uIntensityLeft", 0.8f);
+    shader_.setFloat("uIntensityRight", 0.8f);
 
     glBindVertexArray(VAO_);
     glDrawArrays(GL_TRIANGLES, 0, 6);
