@@ -11,6 +11,8 @@ uniform float uIntensityTop;
 uniform float uIntensityBottom;
 uniform float uIntensityLeft;
 uniform float uIntensityRight;
+uniform int   uColorMode;
+uniform float uHue;
 
 void main() {
     float distLeft   = vUV.x * uResolution.x;

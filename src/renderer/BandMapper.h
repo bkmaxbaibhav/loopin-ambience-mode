@@ -8,9 +8,10 @@ struct VisualParams {
     float trebleIntensity = 0.0f;  // → uTreble uniform
     float hue             = 0.0f;  // → reactive color hue
     int   colorMode       = 0;     // 0=static 1=reactive 2=spectrum
+    bool  isSilent        = true;
 };
 
 class BandMapper {
 public:
-    VisualParams map(float bass, float mid, float treble);
+    VisualParams map(float bass, float mid, float treble, bool isSilent = false);
 };

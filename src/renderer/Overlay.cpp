@@ -89,10 +89,15 @@ bool Overlay::init() {
     return true;
 }
 
-void Overlay::render(float bass, float mid, float treble) {
-    (void)bass;
-    (void)mid;
-    (void)treble;
+void Overlay::render(const VisualParams& params) {
+    // Ticket 4: Fade logic
+    if (params.isSilent) {
+        fadeMultiplier_ -= 0.01f;
+        if (fadeMultiplier_ < 0.0f) fadeMultiplier_ = 0.0f;
+    } else {
+        fadeMultiplier_ += 0.05f;
+        if (fadeMultiplier_ > 1.0f) fadeMultiplier_ = 1.0f;
+    }
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -111,10 +116,13 @@ void Overlay::render(float bass, float mid, float treble) {
     shader_.setFloat("uIntensity", 0.8f);
     shader_.setVec3("uPrimaryColor", 0.48f, 0.18f, 1.0f);
 
-    shader_.setFloat("uIntensityTop", 0.8f);
-    shader_.setFloat("uIntensityBottom", 0.8f);
-    shader_.setFloat("uIntensityLeft", 0.8f);
-    shader_.setFloat("uIntensityRight", 0.8f);
+    shader_.setFloat("uIntensityTop",    params.trebleIntensity * fadeMultiplier_);
+    shader_.setFloat("uIntensityBottom", params.bassIntensity   * fadeMultiplier_);
+    shader_.setFloat("uIntensityLeft",   params.midIntensity    * fadeMultiplier_);
+    shader_.setFloat("uIntensityRight",  params.midIntensity    * fadeMultiplier_);
+
+    shader_.setInt("uColorMode", params.colorMode);
+    shader_.setFloat("uHue", params.hue);
 
     glBindVertexArray(VAO_);
     glDrawArrays(GL_TRIANGLES, 0, 6);
