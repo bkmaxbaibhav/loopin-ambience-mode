@@ -7,11 +7,6 @@
 #include <chrono>
 
 // Manages the fullscreen borderless OpenGL overlay window
-// Window properties:
-//   - Always on top
-//   - Click-through (transparent to mouse input)
-//   - Frameless, no title bar, no taskbar entry
-//   - Alpha-blended center (only edges visible)
 class Overlay {
 public:
     Overlay();
@@ -23,6 +18,7 @@ public:
     void shutdown();
     bool shouldClose() const;
     GLFWwindow* getWindowHandle() const { return window_; }
+    std::chrono::microseconds getFrameTarget() const { return frameTarget_; }
 
 private:
     GLFWwindow* window_ = nullptr;
@@ -39,4 +35,6 @@ private:
     float edgeWidth_ = 12.0f;
     float intensity_ = 0.8f;
     int colorMode_ = 1;
+    int fpsCap_ = 60;
+    std::chrono::microseconds frameTarget_{16667};
 };
