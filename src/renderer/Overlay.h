@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "Shader.h"
 #include "BandMapper.h"
+#include "../settings/Config.h"
 #include <chrono>
 
 // Manages the fullscreen borderless OpenGL overlay window
@@ -18,6 +19,7 @@ public:
 
     bool init();
     void render(const VisualParams& params);
+    void setConfig(const AppConfig& config);
     void shutdown();
     bool shouldClose() const;
 
@@ -30,4 +32,10 @@ private:
     Shader shader_;
     std::chrono::steady_clock::time_point appStart_;
     float fadeMultiplier_ = 1.0f;
+
+    // Config stored for rendering
+    float primaryColor_[3] = {0.482f, 0.184f, 1.0f};
+    float edgeWidth_ = 12.0f;
+    float intensity_ = 0.8f;
+    int colorMode_ = 1;
 };

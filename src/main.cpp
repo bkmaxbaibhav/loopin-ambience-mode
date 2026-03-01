@@ -8,6 +8,9 @@
 #include <thread>
 #include <atomic>
 #include <csignal>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 std::atomic<bool> running{ true };
 
@@ -22,9 +25,17 @@ int main() {
     std::cout << "loopin-ambience-mode starting..." << std::endl;
 
     // a. Load config
-    AppConfig config = Config::load("config/default.json");
+    std::string configPath = "config/default.json";
+    AppConfig config = Config::load(configPath);
     if (getenv("AMBIENCE_DEBUG")) {
         config.debugMode = true;
+    }
+
+    fs::file_time_type lastWriteTime;
+    try {
+        lastWriteTime = fs::last_write_time(configPath);
+    } catch (...) {
+        std::cerr << "Warning: Could not get last write time for " << configPath << std::endl;
     }
 
     // b. Initialize audio
@@ -43,16 +54,36 @@ int main() {
         std::cerr << "Failed to init overlay" << std::endl;
         return 1;
     }
+    overlay.setConfig(config);
 
     // e. Create BandMapper
-    BandMapper mapper;
+    BandMapper mapper(config.colorMode);
 
     std::cout << "Starting 60fps render loop..." << std::endl;
 
     auto lastDebugTime = std::chrono::steady_clock::now();
+    auto lastConfigCheck = std::chrono::steady_clock::now();
 
     while (running && !overlay.shouldClose()) {
         auto frameStart = std::chrono::steady_clock::now();
+
+        // Hot Reload (Ticket 4, Step 4)
+        if (std::chrono::duration_cast<std::chrono::seconds>(frameStart - lastConfigCheck).count() >= 2) {
+            lastConfigCheck = frameStart;
+            try {
+                auto currentWriteTime = fs::last_write_time(configPath);
+                if (currentWriteTime != lastWriteTime) {
+                    lastWriteTime = currentWriteTime;
+                    config = Config::load(configPath);
+                    if (getenv("AMBIENCE_DEBUG")) config.debugMode = true;
+
+                    overlay.setConfig(config);
+                    mapper.setColorMode(config.colorMode);
+
+                    std::cout << "[AMBIENCE] Config reloaded — color_mode: " << config.colorModeStr << std::endl;
+                }
+            } catch (...) {}
+        }
 
         // f. Run the main loop
         auto samples = capture.readSamples();
