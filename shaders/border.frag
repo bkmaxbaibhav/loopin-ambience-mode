@@ -14,6 +14,12 @@ uniform float uIntensityRight;
 uniform int   uColorMode;
 uniform float uHue;
 
+vec3 hsv2rgb(float h, float s, float v) {
+    vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+    vec3 p = abs(fract(vec3(h) + K.xyz) * 6.0 - K.www);
+    return v * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), s);
+}
+
 void main() {
     float distLeft   = vUV.x * uResolution.x;
     float distRight  = (1.0 - vUV.x) * uResolution.x;
@@ -107,5 +113,25 @@ void main() {
     float glow = exp(-minDist * minDist / (uEdgeWidth * uEdgeWidth * 0.5));
     float finalGlow = glow * pulse * finalEdgeIntensity * finalEdgeWave * uIntensity;
 
-    FragColor = vec4(uPrimaryColor * finalGlow, finalGlow);
+    vec3 finalColor;
+    if (uColorMode == 0) {
+        // Static Mode
+        finalColor = uPrimaryColor;
+    } else if (uColorMode == 1) {
+        // Reactive Hue Mode
+        finalColor = hsv2rgb(uHue, 1.0, 1.0);
+    } else {
+        // Spectrum Rainbow Mode (Ticket 3)
+        // edgePosition calculation (from Session 4b)
+        float edgePosition;
+        if (isBottom) edgePosition = vUV.x;
+        else if (isTop) edgePosition = vUV.x;
+        else if (isLeft) edgePosition = vUV.y;
+        else edgePosition = vUV.y;
+
+        float spectrumHue = fract(edgePosition + uTime * 0.1);
+        finalColor = hsv2rgb(spectrumHue, 1.0, 1.0);
+    }
+
+    FragColor = vec4(finalColor * finalGlow, finalGlow);
 }

@@ -13,5 +13,11 @@ struct VisualParams {
 
 class BandMapper {
 public:
+    BandMapper(int colorMode = 1) : colorMode_(colorMode) {}
     VisualParams map(float bass, float mid, float treble, bool isSilent = false);
+    void setColorMode(int mode) { colorMode_ = mode; }
+
+private:
+    int colorMode_ = 1;
+    float smoothHue_ = 0.0f;
 };

@@ -112,9 +112,9 @@ void Overlay::render(const VisualParams& params) {
     float time = std::chrono::duration<float>(now - appStart_).count();
     shader_.setFloat("uTime", time);
 
-    shader_.setFloat("uEdgeWidth", 12.0f);
-    shader_.setFloat("uIntensity", 0.8f);
-    shader_.setVec3("uPrimaryColor", 0.48f, 0.18f, 1.0f);
+    shader_.setFloat("uEdgeWidth", edgeWidth_);
+    shader_.setFloat("uIntensity", intensity_);
+    shader_.setVec3("uPrimaryColor", primaryColor_[0], primaryColor_[1], primaryColor_[2]);
 
     shader_.setFloat("uIntensityTop",    params.trebleIntensity * fadeMultiplier_);
     shader_.setFloat("uIntensityBottom", params.bassIntensity   * fadeMultiplier_);
@@ -130,6 +130,15 @@ void Overlay::render(const VisualParams& params) {
 
     glfwSwapBuffers(window_);
     glfwPollEvents();
+}
+
+void Overlay::setConfig(const AppConfig& config) {
+    edgeWidth_ = (float)config.edgeWidth;
+    intensity_ = config.intensity;
+    primaryColor_[0] = config.primaryColorRGB.r;
+    primaryColor_[1] = config.primaryColorRGB.g;
+    primaryColor_[2] = config.primaryColorRGB.b;
+    colorMode_ = config.colorMode;
 }
 
 void Overlay::shutdown() {
