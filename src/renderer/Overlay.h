@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "Shader.h"
+#include <chrono>
 
 // Manages the fullscreen borderless OpenGL overlay window
 // Window properties:
@@ -26,4 +27,5 @@ private:
     unsigned int VAO_ = 0;
     unsigned int VBO_ = 0;
     Shader shader_;
+    std::chrono::steady_clock::time_point appStart_;
 };
