@@ -1,3 +1,6 @@
+#ifdef __linux__
+#include "platform/LinuxPlatform.h"
+#endif
 #include "renderer/Overlay.h"
 #include "audio/AudioCapture.h"
 #include "audio/FFTProcessor.h"
@@ -55,6 +58,11 @@ int main() {
         return 1;
     }
     overlay.setConfig(config);
+
+#ifdef __linux__
+    LinuxPlatform platform;
+    platform.init(overlay.getWindowHandle());
+#endif
 
     // e. Create BandMapper
     BandMapper mapper(config.colorMode);
