@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "Shader.h"
+#include "BandMapper.h"
 #include <chrono>
 
 // Manages the fullscreen borderless OpenGL overlay window
@@ -16,7 +17,7 @@ public:
     ~Overlay();
 
     bool init();
-    void render(float bass, float mid, float treble);
+    void render(const VisualParams& params);
     void shutdown();
     bool shouldClose() const;
 
@@ -28,4 +29,5 @@ private:
     unsigned int VBO_ = 0;
     Shader shader_;
     std::chrono::steady_clock::time_point appStart_;
+    float fadeMultiplier_ = 1.0f;
 };

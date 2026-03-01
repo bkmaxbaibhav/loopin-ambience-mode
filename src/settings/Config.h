@@ -12,6 +12,7 @@ struct AppConfig {
     bool        focusMode     = true;
     bool        autostart     = false;
     bool        allMonitors   = false;
+    bool        debugMode     = false;
 };
 
 class Config {
