@@ -1,4 +1,5 @@
 #include "Overlay.h"
+#include "../utils.h"
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -55,7 +56,6 @@ bool Overlay::init() {
     // 9. Set viewport
     glViewport(0, 0, width_, height_);
 
-    // TICKET 2: Setup VAO and VBO for fullscreen quad
     float vertices[] = {
         -1.0f,  1.0f,
         -1.0f, -1.0f,
@@ -78,7 +78,6 @@ bool Overlay::init() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // TICKET 3: Load shaders
     if (!shader_.load("shaders/border.vert", "shaders/border.frag")) {
         std::cerr << "Failed to load shaders" << std::endl;
         return false;
@@ -90,7 +89,6 @@ bool Overlay::init() {
 }
 
 void Overlay::render(const VisualParams& params) {
-    // Ticket 4: Fade logic
     if (params.isSilent) {
         fadeMultiplier_ -= 0.01f;
         if (fadeMultiplier_ < 0.0f) fadeMultiplier_ = 0.0f;
@@ -135,10 +133,15 @@ void Overlay::render(const VisualParams& params) {
 void Overlay::setConfig(const AppConfig& config) {
     edgeWidth_ = (float)config.edgeWidth;
     intensity_ = config.intensity;
-    primaryColor_[0] = config.primaryColorRGB.r;
-    primaryColor_[1] = config.primaryColorRGB.g;
-    primaryColor_[2] = config.primaryColorRGB.b;
-    colorMode_ = config.colorMode;
+
+    ColorRGB rgb = hexToRGB(config.primaryColor);
+    primaryColor_[0] = rgb.r;
+    primaryColor_[1] = rgb.g;
+    primaryColor_[2] = rgb.b;
+
+    colorMode_ = colorModeFromString(config.colorMode);
+    fpsCap_ = config.fpsCap;
+    frameTarget_ = std::chrono::microseconds(1000000 / config.fpsCap);
 }
 
 void Overlay::shutdown() {

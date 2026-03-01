@@ -6,6 +6,7 @@
 #include "audio/FFTProcessor.h"
 #include "renderer/BandMapper.h"
 #include "settings/Config.h"
+#include "utils.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -65,9 +66,9 @@ int main() {
 #endif
 
     // e. Create BandMapper
-    BandMapper mapper(config.colorMode);
+    BandMapper mapper(colorModeFromString(config.colorMode));
 
-    std::cout << "Starting 60fps render loop..." << std::endl;
+    std::cout << "Starting render loop..." << std::endl;
 
     auto lastDebugTime = std::chrono::steady_clock::now();
     auto lastConfigCheck = std::chrono::steady_clock::now();
@@ -75,20 +76,30 @@ int main() {
     while (running && !overlay.shouldClose()) {
         auto frameStart = std::chrono::steady_clock::now();
 
-        // Hot Reload (Ticket 4, Step 4)
-        if (std::chrono::duration_cast<std::chrono::seconds>(frameStart - lastConfigCheck).count() >= 2) {
-            lastConfigCheck = frameStart;
+        // Hot Reload logic
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastConfigCheck >= std::chrono::seconds(2)) {
+            lastConfigCheck = now;
             try {
                 auto currentWriteTime = fs::last_write_time(configPath);
                 if (currentWriteTime != lastWriteTime) {
                     lastWriteTime = currentWriteTime;
-                    config = Config::load(configPath);
-                    if (getenv("AMBIENCE_DEBUG")) config.debugMode = true;
+                    AppConfig newConfig = Config::load(configPath);
 
-                    overlay.setConfig(config);
-                    mapper.setColorMode(config.colorMode);
+                    // Safety heuristic: skip reload if it looks like mid-save defaults
+                    if (!(newConfig.intensity == 0.8f &&
+                          newConfig.edgeWidth == 12 &&
+                          newConfig.colorMode == "reactive" &&
+                          newConfig.fpsCap == 60)) {
 
-                    std::cout << "[AMBIENCE] Config reloaded — color_mode: " << config.colorModeStr << std::endl;
+                        config = newConfig;
+                        if (getenv("AMBIENCE_DEBUG")) config.debugMode = true;
+
+                        overlay.setConfig(config);
+                        mapper.setColorMode(colorModeFromString(config.colorMode));
+
+                        std::cout << "[AMBIENCE] Config hot-reloaded" << std::endl;
+                    }
                 }
             } catch (...) {}
         }
@@ -107,20 +118,20 @@ int main() {
         overlay.render(params);
 
         if (config.debugMode) {
-            auto now = std::chrono::steady_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastDebugTime).count() >= 500) {
+            auto debugNow = std::chrono::steady_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(debugNow - lastDebugTime).count() >= 500) {
                 std::cout << "[AMBIENCE] bass=" << fft.getBass()
                           << " mid=" << fft.getMid()
                           << " treble=" << fft.getTreble()
                           << " silent=" << (fft.isSilent() ? "true" : "false")
                           << std::endl;
-                lastDebugTime = now;
+                lastDebugTime = debugNow;
             }
         }
 
         auto frameEnd = std::chrono::steady_clock::now();
         auto elapsed  = frameEnd - frameStart;
-        auto target   = std::chrono::microseconds(16667); // ~60fps
+        auto target   = overlay.getFrameTarget();
 
         if (elapsed < target) {
             std::this_thread::sleep_for(target - elapsed);
