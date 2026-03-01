@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <algorithm>
 
 Overlay::Overlay()  {}
 Overlay::~Overlay() { shutdown(); }
@@ -89,13 +90,26 @@ bool Overlay::init() {
 }
 
 void Overlay::render(const VisualParams& params) {
+    // Audio silence fade
     if (params.isSilent) {
-        fadeMultiplier_ -= 0.01f;
-        if (fadeMultiplier_ < 0.0f) fadeMultiplier_ = 0.0f;
+        silenceFade_ -= 0.01f;
+        if (silenceFade_ < 0.0f) silenceFade_ = 0.0f;
     } else {
-        fadeMultiplier_ += 0.05f;
-        if (fadeMultiplier_ > 1.0f) fadeMultiplier_ = 1.0f;
+        silenceFade_ += 0.05f;
+        if (silenceFade_ > 1.0f) silenceFade_ = 1.0f;
     }
+
+    // Manual visibility toggle fade
+    float fadeInSpeed  = 0.05f; // ~20 frames
+    float fadeOutSpeed = 0.03f; // ~33 frames
+
+    if (visibilityFade_ < targetAlpha_) {
+        visibilityFade_ = std::min(targetAlpha_, visibilityFade_ + fadeInSpeed);
+    } else if (visibilityFade_ > targetAlpha_) {
+        visibilityFade_ = std::max(targetAlpha_, visibilityFade_ - fadeOutSpeed);
+    }
+
+    float combinedFade = silenceFade_ * visibilityFade_;
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -111,13 +125,13 @@ void Overlay::render(const VisualParams& params) {
     shader_.setFloat("uTime", time);
 
     shader_.setFloat("uEdgeWidth", edgeWidth_);
-    shader_.setFloat("uIntensity", intensity_);
+    shader_.setFloat("uIntensity", intensity_ * combinedFade);
     shader_.setVec3("uPrimaryColor", primaryColor_[0], primaryColor_[1], primaryColor_[2]);
 
-    shader_.setFloat("uIntensityTop",    params.trebleIntensity * fadeMultiplier_);
-    shader_.setFloat("uIntensityBottom", params.bassIntensity   * fadeMultiplier_);
-    shader_.setFloat("uIntensityLeft",   params.midIntensity    * fadeMultiplier_);
-    shader_.setFloat("uIntensityRight",  params.midIntensity    * fadeMultiplier_);
+    shader_.setFloat("uIntensityTop",    params.trebleIntensity * combinedFade);
+    shader_.setFloat("uIntensityBottom", params.bassIntensity   * combinedFade);
+    shader_.setFloat("uIntensityLeft",   params.midIntensity    * combinedFade);
+    shader_.setFloat("uIntensityRight",  params.midIntensity    * combinedFade);
 
     shader_.setInt("uColorMode", params.colorMode);
     shader_.setFloat("uHue", params.hue);
@@ -142,6 +156,10 @@ void Overlay::setConfig(const AppConfig& config) {
     colorMode_ = colorModeFromString(config.colorMode);
     fpsCap_ = config.fpsCap;
     frameTarget_ = std::chrono::microseconds(1000000 / config.fpsCap);
+}
+
+void Overlay::setTargetVisibility(bool visible) {
+    targetAlpha_ = visible ? 1.0f : 0.0f;
 }
 
 void Overlay::shutdown() {

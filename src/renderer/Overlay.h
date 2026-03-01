@@ -17,6 +17,7 @@ public:
     void setConfig(const AppConfig& config);
     void shutdown();
     bool shouldClose() const;
+    void setTargetVisibility(bool visible);
     GLFWwindow* getWindowHandle() const { return window_; }
     std::chrono::microseconds getFrameTarget() const { return frameTarget_; }
 
@@ -28,7 +29,9 @@ private:
     unsigned int VBO_ = 0;
     Shader shader_;
     std::chrono::steady_clock::time_point appStart_;
-    float fadeMultiplier_ = 1.0f;
+    float silenceFade_ = 1.0f;
+    float visibilityFade_ = 1.0f;
+    float targetAlpha_ = 1.0f;
 
     // Config stored for rendering
     float primaryColor_[3] = {0.482f, 0.184f, 1.0f};

@@ -1,5 +1,13 @@
 #ifdef __linux__
 #include "platform/LinuxPlatform.h"
+#include "platform/Tray.h"
+#include "platform/Hotkey.h"
+#include "platform/AutoStart.h"
+#include <X11/Xlib.h>
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_X11
+#include <GLFW/glfw3native.h>
+#include <dlfcn.h>
 #endif
 #include "renderer/Overlay.h"
 #include "audio/AudioCapture.h"
@@ -23,7 +31,7 @@ void signalHandler(int signum) {
     running = false;
 }
 
-int main() {
+int main(int argc, char** argv) {
     signal(SIGINT, signalHandler);
 
     std::cout << "loopin-ambience-mode starting..." << std::endl;
@@ -33,6 +41,18 @@ int main() {
     AppConfig config = Config::load(configPath);
     if (getenv("AMBIENCE_DEBUG")) {
         config.debugMode = true;
+    }
+
+    // Auto-start check
+    try {
+        std::string execPath = fs::canonical(argv[0]).string();
+        if (config.autostart && !AutoStart::isEnabled()) {
+            AutoStart::enable(execPath);
+        } else if (!config.autostart && AutoStart::isEnabled()) {
+            AutoStart::disable();
+        }
+    } catch (...) {
+        std::cerr << "Warning: Could not handle auto-start configuration" << std::endl;
     }
 
     fs::file_time_type lastWriteTime;
@@ -63,6 +83,29 @@ int main() {
 #ifdef __linux__
     LinuxPlatform platform;
     platform.init(overlay.getWindowHandle());
+
+    Tray tray;
+    tray.init("loopin-ambience-mode"); // Use icon name for system theme or path
+
+    Hotkey hotkey;
+    // For hotkey we need native X11 handles if available
+    void* symbol = dlsym(RTLD_DEFAULT, "glfwGetX11Display");
+    auto getXDisplay = reinterpret_cast<Display*(*)()>(symbol);
+    if (getXDisplay) {
+        hotkey.init(getXDisplay(), DefaultRootWindow(getXDisplay()));
+    }
+
+    bool overlayVisible = true;
+    auto toggleOverlay = [&]() {
+        overlayVisible = !overlayVisible;
+        tray.setVisible(overlayVisible);
+        overlay.setTargetVisibility(overlayVisible);
+        std::cout << "[AMBIENCE] Overlay " << (overlayVisible ? "shown" : "hidden") << std::endl;
+    };
+
+    tray.setOnToggle(toggleOverlay);
+    tray.setOnQuit([&]() { running = false; });
+    hotkey.setOnToggle(toggleOverlay);
 #endif
 
     // e. Create BandMapper
@@ -98,11 +141,24 @@ int main() {
                         overlay.setConfig(config);
                         mapper.setColorMode(colorModeFromString(config.colorMode));
 
+                        // Handle autostart toggle on hot reload
+                        std::string execPath = fs::canonical(argv[0]).string();
+                        if (config.autostart && !AutoStart::isEnabled()) {
+                            AutoStart::enable(execPath);
+                        } else if (!config.autostart && AutoStart::isEnabled()) {
+                            AutoStart::disable();
+                        }
+
                         std::cout << "[AMBIENCE] Config hot-reloaded" << std::endl;
                     }
                 }
             } catch (...) {}
         }
+
+#ifdef __linux__
+        tray.update();
+        hotkey.poll();
+#endif
 
         // f. Run the main loop
         auto samples = capture.readSamples();
