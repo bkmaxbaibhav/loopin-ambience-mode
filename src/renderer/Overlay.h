@@ -22,6 +22,7 @@ public:
     void setConfig(const AppConfig& config);
     void shutdown();
     bool shouldClose() const;
+    GLFWwindow* getWindowHandle() const { return window_; }
 
 private:
     GLFWwindow* window_ = nullptr;
