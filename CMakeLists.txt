@@ -72,6 +72,7 @@ endif()
 
 # Conditional platform compilation
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    pkg_check_modules(APPINDICATOR REQUIRED appindicator3-0.1)
     pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
     pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
     pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
@@ -101,20 +102,27 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     )
 
     target_sources(loopin-ambience-mode PRIVATE
+        src/platform/Tray.cpp
+        src/platform/Hotkey.cpp
+        src/platform/AutoStart.cpp
         src/platform/LinuxPlatform.cpp
         ${XDG_SHELL_SRC}
         ${XDG_SHELL_HDR}
         ${WLR_LAYER_SHELL_SRC}
         ${WLR_LAYER_SHELL_HDR}
     )
-    target_include_directories(loopin-ambience-mode PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    target_include_directories(loopin-ambience-mode PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${APPINDICATOR_INCLUDE_DIRS})
     target_link_libraries(loopin-ambience-mode PRIVATE
+        ${APPINDICATOR_LIBRARIES}
         X11 Xfixes
         ${WAYLAND_CLIENT_LIBRARIES}
         ${CMAKE_DL_LIBS}
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_sources(loopin-ambience-mode PRIVATE
+        src/platform/Tray.cpp
+        src/platform/Hotkey.cpp
+        src/platform/AutoStart.cpp
         src/platform/WindowsPlatform.cpp)
     target_link_libraries(loopin-ambience-mode PRIVATE
         dwmapi)
