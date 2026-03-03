@@ -1,0 +1,35 @@
+# Maintainer: Baibhav Kumar <baibhavkumar20@gmail.com>
+pkgname=loopin-ambience-mode
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Audio reactive ambient screen border lighting inspired by Android edge lighting"
+arch=('x86_64')
+url="https://github.com/baibhavkumar/loopin-ambience-mode"
+license=('MIT')
+depends=(
+    'portaudio'
+    'fftw'
+    'glfw'
+    'libappindicator-gtk3'
+    'libxfixes'
+)
+makedepends=(
+    'cmake'
+    'glad'
+    'nlohmann-json'
+)
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "$pkgname-$pkgver"
+    cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build -j$(nproc)
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    DESTDIR="$pkgdir" cmake --install build
+}

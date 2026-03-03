@@ -4,6 +4,9 @@
 #include <vector>
 #include <chrono>
 #include <algorithm>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 Overlay::Overlay()  {}
 Overlay::~Overlay() { shutdown(); }
@@ -79,7 +82,15 @@ bool Overlay::init() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    if (!shader_.load("shaders/border.vert", "shaders/border.frag")) {
+    std::string vertPath = "shaders/border.vert";
+    std::string fragPath = "shaders/border.frag";
+
+    if (!fs::exists(vertPath)) {
+        vertPath = "/usr/share/loopin-ambience-mode/shaders/border.vert";
+        fragPath = "/usr/share/loopin-ambience-mode/shaders/border.frag";
+    }
+
+    if (!shader_.load(vertPath, fragPath)) {
         std::cerr << "Failed to load shaders" << std::endl;
         return false;
     }

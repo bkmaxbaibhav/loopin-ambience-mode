@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Loopin Ambience Mode
+GenericName=Audio Reactive Screen Border
+Comment=Ambient edge lighting that reacts to your system audio
+Exec=loopin-ambience-mode
+Icon=loopin-ambience-mode
+Categories=Utility;AudioVideo;
+Keywords=ambient;lighting;audio;border;
+StartupNotify=false
+NoDisplay=false
