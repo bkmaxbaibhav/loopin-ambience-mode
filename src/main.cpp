@@ -38,6 +38,9 @@ int main(int argc, char** argv) {
 
     // a. Load config
     std::string configPath = "config/default.json";
+    if (!fs::exists(configPath)) {
+        configPath = "/etc/loopin-ambience-mode/default.json";
+    }
     AppConfig config = Config::load(configPath);
     if (getenv("AMBIENCE_DEBUG")) {
         config.debugMode = true;

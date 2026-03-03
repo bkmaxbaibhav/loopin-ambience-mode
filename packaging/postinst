@@ -1,0 +1,6 @@
+#!/bin/sh
+update-desktop-database
+gtk-update-icon-cache /usr/share/icons/hicolor
+echo "Loopin Ambience Mode installed."
+echo "Run: loopin-ambience-mode"
+echo "Or find it in your application launcher."
