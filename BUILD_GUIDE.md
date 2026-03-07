@@ -12,6 +12,8 @@ This is a C++ audio visualization application using CMake build system on Ubuntu
 - GLFW3
 - nlohmann/json
 - X11 and XFixes libraries (for Linux)
+- Wayland and wlr-layer-shell (for Linux)
+- AppIndicator (for Linux tray)
 
 ## Build Steps
 
@@ -21,11 +23,16 @@ sudo apt-get update
 sudo apt-get install -y \
   build-essential \
   cmake \
-  libportaudio2 libportaudio-dev \
+  pkg-config \
+  portaudio19-dev \
   libfftw3-dev libfftw3-single3 \
   libglfw3 libglfw3-dev \
   libgl1-mesa-dev \
   nlohmann-json3-dev \
+  libappindicator3-dev \
+  libwayland-dev \
+  wayland-protocols \
+  libwayland-bin \
   libx11-dev \
   libxfixes-dev
 ```
@@ -72,16 +79,15 @@ src/
 All source files have been verified and are complete:
 - ✓ AudioCapture (with PortAudio integration)
 - ✓ FFTProcessor (with FFTW3)
-- ✓ Overlay (placeholder for Session 4)
-- ✓ Shader (placeholder for Session 4)
-- ✓ BandMapper (placeholder for Session 5)
-- ✓ Config (placeholder for Session 7)
+- ✓ Overlay
+- ✓ Shader
+- ✓ BandMapper
+- ✓ Config
 - ✓ Platform implementations (LinuxPlatform, WindowsPlatform)
 
 ## Current Development Status
-According to README.md, this is Session 1 (Project Scaffold + CMakeLists.txt)
-- Session 1: ✓ Project scaffold complete
-- Session 2+: Pending implementations (but compilable)
+- Session 1-7: ✓ Implemented
+- Session 8+: Pending Windows refinements
 
 ## Notes
 The project is currently set up to run in SIMULATION mode if no audio device is available, making it testable in container environments.
