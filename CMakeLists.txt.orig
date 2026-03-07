@@ -138,14 +138,6 @@ else()
     target_link_libraries(loopin-ambience-fft-test PRIVATE ${FFTW3_LIBRARIES})
 endif()
 
-add_executable(loopin-ambience-hotreload-test
-    tests/test_hotreload.cpp
-    src/settings/Config.cpp)
-target_link_libraries(loopin-ambience-hotreload-test
-    PRIVATE nlohmann_json::nlohmann_json)
-target_include_directories(loopin-ambience-hotreload-test
-    PRIVATE src)
-
 # Post-build copy commands
 add_custom_command(TARGET loopin-ambience-mode POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

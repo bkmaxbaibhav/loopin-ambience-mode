@@ -1,0 +1,12 @@
+--- src/platform/LinuxPlatform.cpp
++++ src/platform/LinuxPlatform.cpp
+@@ -193,4 +193,9 @@
+ }
+
+ void LinuxPlatform::registerHotkey() {
++    // Intentionally empty.
++    // Global hotkey on Linux is handled by the
++    // dedicated Hotkey class using XGrabKey directly.
++    // This override exists only to satisfy the
++    // Platform abstract interface.
+ }

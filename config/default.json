@@ -1,1 +1,11 @@
-{"intensity": 0.9, "edge_width": 15, "fps_cap": 30, "color_mode": "static"}
+{
+  "intensity": 0.8,
+  "edge_width": 12,
+  "fps_cap": 60,
+  "color_mode": "reactive",
+  "primary_color": "#7B2FFF",
+  "focus_mode": true,
+  "autostart": false,
+  "all_monitors": false,
+  "debug_mode": false
+}

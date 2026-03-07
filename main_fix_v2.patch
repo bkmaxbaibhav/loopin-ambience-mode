@@ -1,0 +1,28 @@
+--- src/main.cpp
++++ src/main.cpp
+@@ -9,7 +9,6 @@
+ #define GLFW_EXPOSE_NATIVE_X11
+ #include <GLFW/glfw3native.h>
+-#include <dlfcn.h>
+ #endif
+ #include "renderer/Overlay.h"
+ #include "audio/AudioCapture.h"
+@@ -83,12 +82,14 @@
+
+     Hotkey hotkey;
+     // For hotkey we need native X11 handles if available
+-    void* symbol = dlsym(RTLD_DEFAULT, "glfwGetX11Display");
+-    auto getXDisplay = reinterpret_cast<Display*(*)()>(symbol);
+-    if (getXDisplay) {
+-        hotkey.init(getXDisplay(), DefaultRootWindow(getXDisplay()));
+-    }
++    Display* xDisp = glfwGetX11Display();
++    if (xDisp) {
++        hotkey.init(xDisp, DefaultRootWindow(xDisp));
++    } else {
++        std::cerr << "[AMBIENCE] Could not get X11 display"
++                  << " — hotkey disabled" << std::endl;
++    }
+
+     bool overlayVisible = true;
+     auto toggleOverlay = [&]() {
