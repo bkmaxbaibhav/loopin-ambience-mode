@@ -17,11 +17,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             cmake \
-            libportaudio-dev \
+            pkg-config \
+            portaudio19-dev \
             libfftw3-dev \
             libglfw3-dev \
-            libglew-dev \
+            libgl1-mesa-dev \
             libappindicator3-dev \
+            libwayland-dev \
+            wayland-protocols \
+            libwayland-bin \
             libx11-dev \
             libxfixes-dev \
             nlohmann-json3-dev \

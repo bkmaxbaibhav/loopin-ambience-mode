@@ -33,6 +33,8 @@ sudo rpm -ivh https://github.com/baibhavkumar/loopin-ambience-mode/releases/late
 - GLFW3
 - GLAD
 - nlohmann/json
+- Wayland / X11
+- AppIndicator
 
 ## Installing Dependencies
 
@@ -42,11 +44,15 @@ sudo apt-get update
 sudo apt-get install -y \
   build-essential \
   cmake \
+  pkg-config \
   portaudio19-dev \
   libfftw3-dev \
   libglfw3-dev \
   libgl1-mesa-dev \
   nlohmann-json3-dev \
+  libappindicator3-dev \
+  libwayland-dev \
+  wayland-protocols \
   libx11-dev \
   libxfixes-dev
 ```
@@ -63,7 +69,10 @@ sudo dnf install -y \
   mesa-libGL-devel \
   nlohmann_json-devel \
   libX11-devel \
-  libXfixes-devel
+  libXfixes-devel \
+  libappindicator-gtk3-devel \
+  wayland-devel \
+  wayland-protocols-devel
 ```
 
 ### macOS
@@ -97,13 +106,13 @@ cmake --build . --config Release
 
 | Session | Status | Description |
 | :--- | :--- | :--- |
-| Session 1 | In Progress | Project Scaffold + CMakeLists.txt |
-| Session 2 | Pending | Audio Capture (PortAudio) |
-| Session 3 | Pending | FFT Processing (FFTW3) |
-| Session 4 | Pending | Overlay Window & Shader Loading |
-| Session 5 | Pending | Audio-to-Visual Mapping |
-| Session 6 | Pending | Advanced Shader Effects & Color Modes |
-| Session 7 | Pending | Linux Platform Implementation & Config |
+| Session 1 | ✓ | Project Scaffold + CMakeLists.txt |
+| Session 2 | ✓ | Audio Capture (PortAudio) |
+| Session 3 | ✓ | FFT Processing (FFTW3) |
+| Session 4 | ✓ | Overlay Window & Shader Loading |
+| Session 5 | ✓ | Audio-to-Visual Mapping |
+| Session 6 | ✓ | Advanced Shader Effects & Color Modes |
+| Session 7 | ✓ | Linux Platform Implementation & Config |
 | Session 8 | Pending | Windows Platform Implementation |
 | Session 9 | Pending | Global Hotkeys & System Tray |
 | Session 10 | Pending | Optimization & Bug Fixes |
