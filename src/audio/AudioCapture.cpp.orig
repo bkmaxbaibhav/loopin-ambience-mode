@@ -70,12 +70,9 @@ bool AudioCapture::start() {
 
             PaStreamParameters inputParameters;
             inputParameters.device = inputDevice;
-            const PaDeviceInfo* info = Pa_GetDeviceInfo(inputDevice);
-            channels_ = std::min(info->maxInputChannels, 2);
-            if (channels_ < 1) channels_ = 1;
-            inputParameters.channelCount = channels_;
+            inputParameters.channelCount = 2;
             inputParameters.sampleFormat = paFloat32;
-            inputParameters.suggestedLatency = info->defaultLowInputLatency;
+            inputParameters.suggestedLatency = Pa_GetDeviceInfo(inputDevice)->defaultLowInputLatency;
             inputParameters.hostApiSpecificStreamInfo = &wasapiInfo;
 
             err = Pa_OpenStream(&stream_, &inputParameters, nullptr, SAMPLE_RATE,
@@ -100,12 +97,9 @@ bool AudioCapture::start() {
         if (inputDevice != -1) {
             PaStreamParameters inputParameters;
             inputParameters.device = inputDevice;
-            const PaDeviceInfo* info = Pa_GetDeviceInfo(inputDevice);
-            channels_ = std::min(info->maxInputChannels, 2);
-            if (channels_ < 1) channels_ = 1;
-            inputParameters.channelCount = channels_;
+            inputParameters.channelCount = 2;
             inputParameters.sampleFormat = paFloat32;
-            inputParameters.suggestedLatency = info->defaultLowInputLatency;
+            inputParameters.suggestedLatency = Pa_GetDeviceInfo(inputDevice)->defaultLowInputLatency;
             inputParameters.hostApiSpecificStreamInfo = nullptr;
 
             err = Pa_OpenStream(&stream_, &inputParameters, nullptr, SAMPLE_RATE,

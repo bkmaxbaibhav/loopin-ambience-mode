@@ -200,9 +200,4 @@ void LinuxPlatform::setAlwaysOnTop() {
 }
 
 void LinuxPlatform::registerHotkey() {
-    // Intentionally empty.
-    // Global hotkey on Linux is handled by the
-    // dedicated Hotkey class using XGrabKey directly.
-    // This override exists only to satisfy the
-    // Platform abstract interface.
 }

@@ -39,5 +39,6 @@ private:
     float intensity_ = 0.8f;
     int colorMode_ = 1;
     int fpsCap_ = 60;
+    bool glfwInitialized_ = false;
     std::chrono::microseconds frameTarget_{16667};
 };

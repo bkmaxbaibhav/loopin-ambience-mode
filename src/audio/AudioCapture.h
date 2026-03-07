@@ -29,6 +29,8 @@ private:
 
     std::atomic<bool> running_{ false };
     PaStream* stream_{ nullptr };
+    bool paInitialized_ = false;
+    int channels_ = 2;
     std::thread simulationThread_;
 
     // Ring Buffer settings

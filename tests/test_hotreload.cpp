@@ -1,4 +1,4 @@
-#include "src/settings/Config.h"
+#include "settings/Config.h"
 #include <iostream>
 #include <chrono>
 #include <thread>

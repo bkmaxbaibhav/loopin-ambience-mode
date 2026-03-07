@@ -17,7 +17,6 @@ bool Overlay::init() {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
     }
-    glfwInitialized_ = true;
 
     // 2. Set window hints
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
@@ -175,22 +174,10 @@ void Overlay::setTargetVisibility(bool visible) {
 }
 
 void Overlay::shutdown() {
-    if (VAO_) {
-        glDeleteVertexArrays(1, &VAO_);
-        VAO_ = 0;
-    }
-    if (VBO_) {
-        glDeleteBuffers(1, &VBO_);
-        VBO_ = 0;
-    }
-    if (window_) {
-        glfwDestroyWindow(window_);
-        window_ = nullptr;
-    }
-    if (glfwInitialized_) {
-        glfwTerminate();
-        glfwInitialized_ = false;
-    }
+    if (VAO_) glDeleteVertexArrays(1, &VAO_);
+    if (VBO_) glDeleteBuffers(1, &VBO_);
+    if (window_) glfwDestroyWindow(window_);
+    glfwTerminate();
 }
 
 bool Overlay::shouldClose() const {
