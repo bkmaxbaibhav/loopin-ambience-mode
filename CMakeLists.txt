@@ -174,7 +174,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Audio reactive ambient screen border ligh
 set(CPACK_PACKAGE_DESCRIPTION "loopin-ambience-mode renders a beautiful ambient glow along your screen edges that reacts in real-time to system audio output. Inspired by Android edge lighting.")
 
 # DEB specific
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libportaudio2, libfftw3-3, libglfw3, libappindicator3-1, libx11-6, libxfixes3")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libportaudio2, libfftw3-single3, libglfw3, libappindicator3-1, libx11-6, libxfixes3")
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/baibhavkumar/loopin-ambience-mode")
