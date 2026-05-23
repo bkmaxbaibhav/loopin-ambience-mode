@@ -1,8 +1,8 @@
 {
   "intensity": 0.8,
-  "edge_width": 12,
+  "edge_width": 18,
   "fps_cap": 60,
-  "color_mode": "reactive",
+  "color_mode": "spectrum",
   "primary_color": "#7B2FFF",
   "focus_mode": true,
   "autostart": false,

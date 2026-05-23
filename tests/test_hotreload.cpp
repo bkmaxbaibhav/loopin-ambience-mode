@@ -9,8 +9,10 @@
 namespace fs = std::filesystem;
 
 int main() {
-    std::string configPath = "config/default.json";
-    fs::create_directories("config");
+    auto testDir = fs::temp_directory_path() / "loopin-ambience-hotreload-test";
+    fs::remove_all(testDir);
+    fs::create_directories(testDir);
+    std::string configPath = (testDir / "default.json").string();
 
     // Create initial config
     {
@@ -47,15 +49,9 @@ int main() {
                     lastWriteTime = currentWriteTime;
                     AppConfig newConfig = Config::load(configPath);
 
-                    if (!(newConfig.intensity == 0.8f &&
-                          newConfig.edgeWidth == 12 &&
-                          newConfig.colorMode == "reactive" &&
-                          newConfig.fpsCap == 60)) {
-
-                        config = newConfig;
-                        std::cout << "[AMBIENCE] Config hot-reloaded" << std::endl;
-                        reloaded = true;
-                    }
+                    config = newConfig;
+                    std::cout << "[AMBIENCE] Config hot-reloaded" << std::endl;
+                    reloaded = true;
                 }
             } catch (const std::exception& e) {
                 std::cout << "Reload error: " << e.what() << std::endl;
@@ -64,6 +60,7 @@ int main() {
 
         if (reloaded && config.intensity == 0.9f) {
             std::cout << "Hot-reload successful and verified!" << std::endl;
+            fs::remove_all(testDir);
             return 0;
         }
 
@@ -72,5 +69,6 @@ int main() {
     }
 
     std::cout << "Hot-reload test timed out or failed." << std::endl;
+    fs::remove_all(testDir);
     return 1;
 }

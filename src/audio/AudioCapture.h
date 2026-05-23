@@ -1,5 +1,7 @@
 #pragma once
 #include <atomic>
+#include <cstdio>
+#include <string>
 #include <vector>
 #include <mutex>
 #include <thread>
@@ -26,12 +28,18 @@ private:
                           void* userData);
 
     void pushSamples(const float* input, unsigned long frames);
+#ifdef __linux__
+    bool startPulseMonitor();
+    std::string findPulseMonitorSource() const;
+#endif
 
     std::atomic<bool> running_{ false };
     PaStream* stream_{ nullptr };
     bool paInitialized_ = false;
+    FILE* pulsePipe_{ nullptr };
     int channels_ = 2;
     std::thread simulationThread_;
+    std::thread pulseThread_;
 
     // Ring Buffer settings
     static constexpr size_t RING_BUFFER_SIZE = 8192;

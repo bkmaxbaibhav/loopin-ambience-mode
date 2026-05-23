@@ -1,4 +1,6 @@
 #include "BandMapper.h"
+#include <algorithm>
+#include <cmath>
 
 VisualParams BandMapper::map(float bass,
                               float mid,
@@ -7,10 +9,21 @@ VisualParams BandMapper::map(float bass,
     VisualParams params;
     params.isSilent = isSilent;
 
-    // 1. Map each band to its corresponding edge intensity
-    params.bassIntensity   = bass;   // → uIntensityBottom
-    params.midIntensity    = mid;    // → uIntensityLeft and uIntensityRight
-    params.trebleIntensity = treble; // → uIntensityTop
+    auto liftBand = [](float value, float gain) {
+        return std::clamp(std::pow(std::max(0.0f, value * gain), 0.62f), 0.0f, 1.0f);
+    };
+
+    // PortAudio/Pulse monitor FFT values are small in normal desktop playback,
+    // so compress the range before sending it to the visual layer.
+    params.bassIntensity   = liftBand(bass,   10.0f); // bottom edge
+    params.midIntensity    = liftBand(mid,    24.0f); // side edges
+    params.trebleIntensity = liftBand(treble, 80.0f); // top edge
+
+    bassFloor_ = 0.985f * bassFloor_ + 0.015f * bass;
+    float bassLift = std::max(0.0f, bass - bassFloor_);
+    float beatHit = std::clamp(bassLift * 9.0f + params.bassIntensity * 0.45f, 0.0f, 1.0f);
+    beatPulse_ = std::max(beatHit, beatPulse_ * 0.86f);
+    params.beatPulse = isSilent ? 0.0f : beatPulse_;
 
     // 2. Compute dominant frequency band for Reactive Mode target hue
     float targetHue = 0.0f;

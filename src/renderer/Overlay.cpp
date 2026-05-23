@@ -24,6 +24,9 @@ bool Overlay::init() {
     glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+#ifdef GLFW_MOUSE_PASSTHROUGH
+    glfwWindowHint(GLFW_MOUSE_PASSTHROUGH, GLFW_TRUE);
+#endif
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -37,6 +40,7 @@ bool Overlay::init() {
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     width_ = mode->width;
     height_ = mode->height;
+    std::cout << "[AMBIENCE] Overlay size: " << width_ << "x" << height_ << std::endl;
 
     // 4. Create window
     window_ = glfwCreateWindow(width_, height_, "loopin-ambience-mode", NULL, NULL);
@@ -48,6 +52,7 @@ bool Overlay::init() {
 
     // 10. Position window at 0,0
     glfwSetWindowPos(window_, 0, 0);
+    glfwShowWindow(window_);
 
     // 7. Make OpenGL context current
     glfwMakeContextCurrent(window_);
@@ -144,6 +149,7 @@ void Overlay::render(const VisualParams& params) {
     shader_.setFloat("uIntensityBottom", params.bassIntensity   * combinedFade);
     shader_.setFloat("uIntensityLeft",   params.midIntensity    * combinedFade);
     shader_.setFloat("uIntensityRight",  params.midIntensity    * combinedFade);
+    shader_.setFloat("uBeat", params.beatPulse * combinedFade);
 
     shader_.setInt("uColorMode", params.colorMode);
     shader_.setFloat("uHue", params.hue);

@@ -1,6 +1,10 @@
 #pragma once
 #include <gtk/gtk.h>
+#ifdef HAVE_AYATANA_APPINDICATOR
+#include <libayatana-appindicator/app-indicator.h>
+#else
 #include <libappindicator/app-indicator.h>
+#endif
 #include <string>
 #include <functional>
 

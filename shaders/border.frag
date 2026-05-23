@@ -11,6 +11,7 @@ uniform float uIntensityTop;
 uniform float uIntensityBottom;
 uniform float uIntensityLeft;
 uniform float uIntensityRight;
+uniform float uBeat;
 uniform int   uColorMode;
 uniform float uHue;
 
@@ -28,10 +29,12 @@ void main() {
     float minDist    = min(min(distLeft, distRight),
                           min(distTop, distBottom));
 
-    if (minDist > uEdgeWidth) discard;
+    float beat = clamp(uBeat, 0.0, 1.0);
+    float glowRadius = max(uEdgeWidth * (4.0 + beat * 2.2), 36.0);
+    if (minDist > glowRadius) discard;
 
     // Ticket 1: Breathing pulse
-    float pulse = 0.85 + 0.15 * sin(uTime * 1.5);
+    float pulse = 0.82 + 0.18 * sin(uTime * 1.5 + beat * 2.0);
 
     // Ticket 2: Edge detection
     bool isBottom = (distBottom <= distLeft &&
@@ -110,8 +113,12 @@ void main() {
         finalEdgeWave = mix(waveTop, waveRight, weight);
     }
 
-    float glow = exp(-minDist * minDist / (uEdgeWidth * uEdgeWidth * 0.5));
-    float finalGlow = glow * pulse * finalEdgeIntensity * finalEdgeWave * uIntensity;
+    float core = 1.0 - smoothstep(0.0, uEdgeWidth, minDist);
+    float aura = exp(-(minDist * minDist) / (glowRadius * glowRadius * 0.18));
+    float glow = max(core, aura * 0.82);
+    float audioFloor = mix(0.38, 1.0, clamp(finalEdgeIntensity, 0.0, 1.0));
+    float beatExpansion = 1.0 + beat * 0.75;
+    float finalGlow = glow * pulse * audioFloor * finalEdgeWave * beatExpansion * uIntensity;
 
     vec3 finalColor;
     if (uColorMode == 0) {
@@ -129,9 +136,10 @@ void main() {
         else if (isLeft) edgePosition = vUV.y;
         else edgePosition = vUV.y;
 
-        float spectrumHue = fract(edgePosition + uTime * 0.1);
-        finalColor = hsv2rgb(spectrumHue, 1.0, 1.0);
+        float spectrumHue = fract(edgePosition * 0.85 + uTime * (0.08 + beat * 0.08) + finalEdgeIntensity * 0.16 + beat * 0.04);
+        finalColor = hsv2rgb(spectrumHue, 0.95, 1.0);
     }
 
-    FragColor = vec4(finalColor * finalGlow, finalGlow);
+    float alpha = clamp(finalGlow * (0.70 + beat * 0.22), 0.0, 0.9);
+    FragColor = vec4(finalColor * finalGlow, alpha);
 }

@@ -72,7 +72,11 @@ endif()
 
 # Conditional platform compilation
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    pkg_check_modules(APPINDICATOR REQUIRED appindicator3-0.1)
+    pkg_check_modules(APPINDICATOR QUIET appindicator3-0.1)
+    if(NOT APPINDICATOR_FOUND)
+        pkg_check_modules(APPINDICATOR REQUIRED ayatana-appindicator3-0.1)
+        set(USE_AYATANA_APPINDICATOR TRUE)
+    endif()
     pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
     pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
     pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
@@ -112,6 +116,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         ${WLR_LAYER_SHELL_HDR}
     )
     target_include_directories(loopin-ambience-mode PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${APPINDICATOR_INCLUDE_DIRS})
+    if(USE_AYATANA_APPINDICATOR)
+        target_compile_definitions(loopin-ambience-mode PRIVATE HAVE_AYATANA_APPINDICATOR)
+    endif()
     target_link_libraries(loopin-ambience-mode PRIVATE
         ${APPINDICATOR_LIBRARIES}
         X11 Xfixes

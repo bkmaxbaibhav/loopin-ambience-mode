@@ -43,6 +43,13 @@ int main(int argc, char** argv) {
     if (getenv("AMBIENCE_DEBUG")) {
         config.debugMode = true;
     }
+    bool visualTestMode = getenv("AMBIENCE_VISUAL_TEST") != nullptr;
+    if (visualTestMode) {
+        config.intensity = 1.0f;
+        config.edgeWidth = 32;
+        config.colorMode = "spectrum";
+        std::cout << "[AMBIENCE] Visual test mode enabled" << std::endl;
+    }
 
     // Auto-start check
     try {
@@ -132,28 +139,26 @@ int main(int argc, char** argv) {
                     lastWriteTime = currentWriteTime;
                     AppConfig newConfig = Config::load(configPath);
 
-                    // Safety heuristic: skip reload if it looks like mid-save defaults
-                    if (!(newConfig.intensity == 0.8f &&
-                          newConfig.edgeWidth == 12 &&
-                          newConfig.colorMode == "reactive" &&
-                          newConfig.fpsCap == 60)) {
-
-                        config = newConfig;
-                        if (getenv("AMBIENCE_DEBUG")) config.debugMode = true;
-
-                        overlay.setConfig(config);
-                        mapper.setColorMode(colorModeFromString(config.colorMode));
-
-                        // Handle autostart toggle on hot reload
-                        std::string execPath = fs::canonical(argv[0]).string();
-                        if (config.autostart && !AutoStart::isEnabled()) {
-                            AutoStart::enable(execPath);
-                        } else if (!config.autostart && AutoStart::isEnabled()) {
-                            AutoStart::disable();
-                        }
-
-                        std::cout << "[AMBIENCE] Config hot-reloaded" << std::endl;
+                    config = newConfig;
+                    if (getenv("AMBIENCE_DEBUG")) config.debugMode = true;
+                    if (visualTestMode) {
+                        config.intensity = 1.0f;
+                        config.edgeWidth = 32;
+                        config.colorMode = "spectrum";
                     }
+
+                    overlay.setConfig(config);
+                    mapper.setColorMode(colorModeFromString(config.colorMode));
+
+                    // Handle autostart toggle on hot reload
+                    std::string execPath = fs::canonical(argv[0]).string();
+                    if (config.autostart && !AutoStart::isEnabled()) {
+                        AutoStart::enable(execPath);
+                    } else if (!config.autostart && AutoStart::isEnabled()) {
+                        AutoStart::disable();
+                    }
+
+                    std::cout << "[AMBIENCE] Config hot-reloaded" << std::endl;
                 }
             } catch (...) {}
         }
@@ -173,6 +178,18 @@ int main(int argc, char** argv) {
             fft.getTreble(),
             fft.isSilent()
         );
+        if (visualTestMode) {
+            params.bassIntensity = 1.0f;
+            params.midIntensity = 1.0f;
+            params.trebleIntensity = 1.0f;
+            params.beatPulse = 0.8f + 0.2f * std::sin(
+                std::chrono::duration<float>(
+                    std::chrono::steady_clock::now().time_since_epoch()
+                ).count() * 4.0f
+            );
+            params.isSilent = false;
+            params.colorMode = 2;
+        }
 
         overlay.render(params);
 
@@ -182,6 +199,7 @@ int main(int argc, char** argv) {
                 std::cout << "[AMBIENCE] bass=" << fft.getBass()
                           << " mid=" << fft.getMid()
                           << " treble=" << fft.getTreble()
+                          << " beat=" << params.beatPulse
                           << " silent=" << (fft.isSilent() ? "true" : "false")
                           << std::endl;
                 lastDebugTime = debugNow;

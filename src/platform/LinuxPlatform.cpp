@@ -142,6 +142,7 @@ bool LinuxPlatform::initX11(void* windowHandle) {
     }
 
     std::cout << "[AMBIENCE] X11 backend initialized" << std::endl;
+    displayServer_ = DisplayServer::X11;
     makeClickThrough();
     setAlwaysOnTop();
     return true;
@@ -161,8 +162,9 @@ void LinuxPlatform::makeClickThrough() {
     Atom wmState = XInternAtom(xDisplay_, "_NET_WM_STATE", False);
     Atom wmStateSkipTaskbar = XInternAtom(xDisplay_, "_NET_WM_STATE_SKIP_TASKBAR", False);
     Atom wmStateSkipPager = XInternAtom(xDisplay_, "_NET_WM_STATE_SKIP_PAGER", False);
-    Atom states[] = { wmStateSkipTaskbar, wmStateSkipPager };
-    XChangeProperty(xDisplay_, xWindow_, wmState, XA_ATOM, 32, PropModeReplace, (unsigned char*)states, 2);
+    Atom wmStateAbove = XInternAtom(xDisplay_, "_NET_WM_STATE_ABOVE", False);
+    Atom states[] = { wmStateSkipTaskbar, wmStateSkipPager, wmStateAbove };
+    XChangeProperty(xDisplay_, xWindow_, wmState, XA_ATOM, 32, PropModeReplace, (unsigned char*)states, 3);
 
     int event, error;
     if (!XFixesQueryExtension(xDisplay_, &event, &error)) {
@@ -196,6 +198,8 @@ void LinuxPlatform::setAlwaysOnTop() {
     event.xclient.data.l[4] = 0;
 
     XSendEvent(xDisplay_, DefaultRootWindow(xDisplay_), False, SubstructureNotifyMask | SubstructureRedirectMask, &event);
+    XMapRaised(xDisplay_, xWindow_);
+    XRaiseWindow(xDisplay_, xWindow_);
     XFlush(xDisplay_);
 }
 
