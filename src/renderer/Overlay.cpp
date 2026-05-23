@@ -143,6 +143,7 @@ void Overlay::render(const VisualParams& params) {
 
     shader_.setFloat("uEdgeWidth", edgeWidth_);
     shader_.setFloat("uIntensity", intensity_ * combinedFade);
+    shader_.setFloat("uContrast", contrast_);
     shader_.setVec3("uPrimaryColor", primaryColor_[0], primaryColor_[1], primaryColor_[2]);
 
     shader_.setFloat("uIntensityTop",    params.trebleIntensity * combinedFade);
@@ -150,8 +151,13 @@ void Overlay::render(const VisualParams& params) {
     shader_.setFloat("uIntensityLeft",   params.midIntensity    * combinedFade);
     shader_.setFloat("uIntensityRight",  params.midIntensity    * combinedFade);
     shader_.setFloat("uBeat", params.beatPulse * combinedFade);
+    shader_.setFloat("uGenreWarmth", params.genreWarmth);
+    shader_.setFloat("uGenrePresence", params.genrePresence);
+    shader_.setFloat("uGenreConfidence", params.genreConfidence);
 
     shader_.setInt("uColorMode", params.colorMode);
+    shader_.setInt("uVisualMode", visualMode_);
+    shader_.setInt("uSideMask", sideMask_);
     shader_.setFloat("uHue", params.hue);
 
     glBindVertexArray(VAO_);
@@ -165,6 +171,12 @@ void Overlay::render(const VisualParams& params) {
 void Overlay::setConfig(const AppConfig& config) {
     edgeWidth_ = (float)config.edgeWidth;
     intensity_ = config.intensity;
+    contrast_ = config.contrast;
+    sideMask_ = (config.sideTop ? 1 : 0)
+              | (config.sideRight ? 2 : 0)
+              | (config.sideBottom ? 4 : 0)
+              | (config.sideLeft ? 8 : 0);
+    if (sideMask_ == 0) sideMask_ = 15;
 
     ColorRGB rgb = hexToRGB(config.primaryColor);
     primaryColor_[0] = rgb.r;
@@ -172,6 +184,7 @@ void Overlay::setConfig(const AppConfig& config) {
     primaryColor_[2] = rgb.b;
 
     colorMode_ = colorModeFromString(config.colorMode);
+    visualMode_ = visualModeFromString(config.visualMode);
     fpsCap_ = config.fpsCap;
     frameTarget_ = std::chrono::microseconds(1000000 / config.fpsCap);
 }

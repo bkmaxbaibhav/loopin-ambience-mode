@@ -5,10 +5,16 @@
 // Loaded from config/default.json at startup
 struct AppConfig {
     float       intensity     = 0.8f;
+    float       contrast      = 1.0f;
     int         edgeWidth     = 12;
     int         fpsCap        = 60;
     std::string colorMode     = "reactive";
+    std::string visualMode    = "auto";
     std::string primaryColor  = "#7B2FFF";
+    bool        sideTop       = true;
+    bool        sideRight     = true;
+    bool        sideBottom    = true;
+    bool        sideLeft      = true;
     bool        focusMode     = true;
     bool        autostart     = false;
     bool        allMonitors   = false;

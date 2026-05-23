@@ -13,6 +13,15 @@ inline int colorModeFromString(const std::string& mode) {
     return 1; // Default to reactive
 }
 
+inline int visualModeFromString(const std::string& mode) {
+    if (mode == "auto")          return 0;
+    if (mode == "soft_aura")     return 1;
+    if (mode == "spectrum_flow") return 2;
+    if (mode == "beat_bloom")    return 3;
+    if (mode == "corner_hits")   return 4;
+    return 0;
+}
+
 inline ColorRGB hexToRGB(const std::string& hex) {
     std::string s = hex;
     if (!s.empty() && s[0] == '#') s = s.substr(1);

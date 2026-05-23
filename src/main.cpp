@@ -14,6 +14,7 @@
 #include "settings/Config.h"
 #include "utils.h"
 #include <iostream>
+#include <cmath>
 #include <chrono>
 #include <thread>
 #include <atomic>
@@ -88,12 +89,16 @@ int main(int argc, char** argv) {
     }
     overlay.setConfig(config);
 
+    // e. Create BandMapper
+    BandMapper mapper(colorModeFromString(config.colorMode));
+
 #ifdef __linux__
     LinuxPlatform platform;
     platform.init(overlay.getWindowHandle());
 
     Tray tray;
     tray.init("loopin-ambience-mode"); // Use icon name for system theme or path
+    tray.syncConfig(config);
 
     Hotkey hotkey;
     // For hotkey we need native X11 handles if available
@@ -115,11 +120,53 @@ int main(int argc, char** argv) {
 
     tray.setOnToggle(toggleOverlay);
     tray.setOnQuit([&]() { running = false; });
+    auto applyMenuConfig = [&]() {
+        config = Config::load(configPath);
+        overlay.setConfig(config);
+        mapper.setColorMode(colorModeFromString(config.colorMode));
+        tray.syncConfig(config);
+    };
+    auto saveMenuConfig = [&]() {
+        Config::save(config, configPath);
+        applyMenuConfig();
+    };
+    tray.setOnColorMode([&](const std::string& mode) {
+        config.colorMode = mode;
+        saveMenuConfig();
+    });
+    tray.setOnVisualMode([&](const std::string& mode) {
+        config.visualMode = mode;
+        saveMenuConfig();
+    });
+    tray.setOnSideToggle([&](const std::string& side, bool enabled) {
+        if (side == "top") config.sideTop = enabled;
+        else if (side == "right") config.sideRight = enabled;
+        else if (side == "bottom") config.sideBottom = enabled;
+        else if (side == "left") config.sideLeft = enabled;
+
+        if (!config.sideTop && !config.sideRight && !config.sideBottom && !config.sideLeft) {
+            if (side == "top") config.sideTop = true;
+            else if (side == "right") config.sideRight = true;
+            else if (side == "bottom") config.sideBottom = true;
+            else if (side == "left") config.sideLeft = true;
+        }
+
+        saveMenuConfig();
+    });
+    tray.setOnEdgeWidth([&](int width) {
+        config.edgeWidth = width;
+        saveMenuConfig();
+    });
+    tray.setOnBrightness([&](float brightness) {
+        config.intensity = brightness;
+        saveMenuConfig();
+    });
+    tray.setOnContrast([&](float contrast) {
+        config.contrast = contrast;
+        saveMenuConfig();
+    });
     hotkey.setOnToggle(toggleOverlay);
 #endif
-
-    // e. Create BandMapper
-    BandMapper mapper(colorModeFromString(config.colorMode));
 
     std::cout << "Starting render loop..." << std::endl;
 
@@ -200,6 +247,7 @@ int main(int argc, char** argv) {
                           << " mid=" << fft.getMid()
                           << " treble=" << fft.getTreble()
                           << " beat=" << params.beatPulse
+                          << " genre_conf=" << params.genreConfidence
                           << " silent=" << (fft.isSilent() ? "true" : "false")
                           << std::endl;
                 lastDebugTime = debugNow;

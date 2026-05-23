@@ -37,7 +37,10 @@ private:
     float primaryColor_[3] = {0.482f, 0.184f, 1.0f};
     float edgeWidth_ = 12.0f;
     float intensity_ = 0.8f;
+    float contrast_ = 1.0f;
+    int sideMask_ = 15;
     int colorMode_ = 1;
+    int visualMode_ = 0;
     int fpsCap_ = 60;
     bool glfwInitialized_ = false;
     std::chrono::microseconds frameTarget_{16667};

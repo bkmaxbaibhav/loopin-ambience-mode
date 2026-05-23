@@ -1,11 +1,17 @@
 {
-  "intensity": 0.8,
-  "edge_width": 18,
-  "fps_cap": 60,
-  "color_mode": "spectrum",
-  "primary_color": "#7B2FFF",
-  "focus_mode": true,
-  "autostart": false,
   "all_monitors": false,
-  "debug_mode": false
+  "autostart": false,
+  "color_mode": "reactive",
+  "contrast": 1.350000023841858,
+  "debug_mode": true,
+  "edge_width": 18,
+  "focus_mode": true,
+  "fps_cap": 60,
+  "intensity": 0.8999999761581421,
+  "primary_color": "#7B2FFF",
+  "side_bottom": true,
+  "side_left": true,
+  "side_right": true,
+  "side_top": true,
+  "visual_mode": "auto"
 }

@@ -7,6 +7,9 @@ struct VisualParams {
     float midIntensity    = 0.0f;  // → uMid uniform
     float trebleIntensity = 0.0f;  // → uTreble uniform
     float beatPulse       = 0.0f;  // short kick/beat transient
+    float genreWarmth     = 1.0f;  // stable palette warmth bias
+    float genrePresence   = 1.0f;  // stable upper-mid/treble presence bias
+    float genreConfidence = 0.0f;
     float hue             = 0.0f;  // → reactive color hue
     int   colorMode       = 0;     // 0=static 1=reactive 2=spectrum
     bool  isSilent        = true;
@@ -20,7 +23,14 @@ public:
 
 private:
     int colorMode_ = 1;
+    int detectedGenre_ = 0;
+    int candidateGenre_ = 0;
+    float candidateHold_ = 0.0f;
+    float genreConfidence_ = 0.0f;
     float smoothHue_ = 0.0f;
     float bassFloor_ = 0.0f;
+    float avgBass_ = 0.0f;
+    float avgMid_ = 0.0f;
+    float avgTreble_ = 0.0f;
     float beatPulse_ = 0.0f;
 };
