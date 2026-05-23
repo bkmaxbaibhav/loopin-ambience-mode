@@ -6,19 +6,27 @@ struct VisualParams {
     float bassIntensity   = 0.0f;  // → uBass uniform
     float midIntensity    = 0.0f;  // → uMid uniform
     float trebleIntensity = 0.0f;  // → uTreble uniform
+    float leftIntensity   = 0.0f;
+    float rightIntensity  = 0.0f;
     float beatPulse       = 0.0f;  // short kick/beat transient
     float genreWarmth     = 1.0f;  // stable palette warmth bias
     float genrePresence   = 1.0f;  // stable upper-mid/treble presence bias
     float genreConfidence = 0.0f;
     float hue             = 0.0f;  // → reactive color hue
-    int   colorMode       = 0;     // 0=static 1=reactive 2=spectrum
+    int   colorMode       = 0;     // 0=static 1=reactive 2=spectrum 3=auto
     bool  isSilent        = true;
 };
 
 class BandMapper {
 public:
     BandMapper(int colorMode = 1) : colorMode_(colorMode) {}
-    VisualParams map(float bass, float mid, float treble, bool isSilent = false);
+    VisualParams map(float bass,
+                     float mid,
+                     float treble,
+                     bool isSilent = false,
+                     float leftLevel = 0.0f,
+                     float rightLevel = 0.0f,
+                     bool surroundSync = false);
     void setColorMode(int mode) { colorMode_ = mode; }
 
 private:

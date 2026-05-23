@@ -148,8 +148,8 @@ void Overlay::render(const VisualParams& params) {
 
     shader_.setFloat("uIntensityTop",    params.trebleIntensity * combinedFade);
     shader_.setFloat("uIntensityBottom", params.bassIntensity   * combinedFade);
-    shader_.setFloat("uIntensityLeft",   params.midIntensity    * combinedFade);
-    shader_.setFloat("uIntensityRight",  params.midIntensity    * combinedFade);
+    shader_.setFloat("uIntensityLeft",   params.leftIntensity   * combinedFade);
+    shader_.setFloat("uIntensityRight",  params.rightIntensity  * combinedFade);
     shader_.setFloat("uBeat", params.beatPulse * combinedFade);
     shader_.setFloat("uGenreWarmth", params.genreWarmth);
     shader_.setFloat("uGenrePresence", params.genrePresence);

@@ -162,7 +162,19 @@ void main() {
         finalColor = uPrimaryColor;
     } else if (uColorMode == 1) {
         // Reactive Hue Mode
-        finalColor = hsv2rgb(uHue, 1.0, 1.0);
+        finalColor = hsv2rgb(uHue, 0.72 + beat * 0.12, 1.0);
+    } else if (uColorMode == 3) {
+        // Auto Colors: comfort palette biased by genre and edge position.
+        float edgePosition;
+        if (isBottom) edgePosition = vUV.x;
+        else if (isTop) edgePosition = vUV.x;
+        else if (isLeft) edgePosition = vUV.y;
+        else edgePosition = vUV.y;
+
+        float warmShift = (uGenreWarmth - 1.0) * 0.035 * genreMix;
+        float autoHue = fract(uHue + edgePosition * 0.08 - warmShift + beat * 0.035);
+        float saturation = mix(0.58, 0.78, beat) * mix(1.0, 0.94 + uGenrePresence * 0.045, genreMix);
+        finalColor = hsv2rgb(autoHue, saturation, 1.0);
     } else {
         // Spectrum Rainbow Mode (Ticket 3)
         // edgePosition calculation (from Session 4b)

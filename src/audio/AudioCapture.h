@@ -19,6 +19,8 @@ public:
     void stop();
     bool isRunning() const;
     std::vector<float> readSamples();
+    float getLeftLevel() const;
+    float getRightLevel() const;
 
 private:
     static int paCallback(const void* inputBuffer, void* outputBuffer,
@@ -47,6 +49,8 @@ private:
     static constexpr double SAMPLE_RATE = 44100.0;
 
     std::vector<float> ringBuffer_;
+    float leftLevel_{ 0.0f };
+    float rightLevel_{ 0.0f };
     size_t writePos_{ 0 };
     size_t readPos_{ 0 };
     size_t count_{ 0 };

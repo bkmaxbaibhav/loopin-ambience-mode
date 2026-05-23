@@ -26,11 +26,22 @@ bool Tray::init(const std::string& iconPath) {
     toggleItem_ = gtk_menu_item_new_with_label("Hide Overlay");
     GtkWidget* colorMenuItem = gtk_menu_item_new_with_label("Color Mode");
     GtkWidget* colorMenu = gtk_menu_new();
-    colorStaticItem_ = gtk_radio_menu_item_new_with_label(nullptr, "Static");
-    GSList* colorGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(colorStaticItem_));
+    colorAutoItem_ = gtk_radio_menu_item_new_with_label(nullptr, "Auto Colors");
+    GSList* colorGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(colorAutoItem_));
+    colorStaticItem_ = gtk_radio_menu_item_new_with_label(colorGroup, "Static");
+    colorGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(colorStaticItem_));
     colorReactiveItem_ = gtk_radio_menu_item_new_with_label(colorGroup, "Reactive");
     colorGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(colorReactiveItem_));
     colorSpectrumItem_ = gtk_radio_menu_item_new_with_label(colorGroup, "Spectrum");
+
+    GtkWidget* presetMenuItem = gtk_menu_item_new_with_label("Color Preset");
+    GtkWidget* presetMenu = gtk_menu_new();
+    colorVioletItem_ = gtk_menu_item_new_with_label("Deep Violet");
+    colorBlueItem_ = gtk_menu_item_new_with_label("Ocean Blue");
+    colorTealItem_ = gtk_menu_item_new_with_label("Forest Teal");
+    colorAmberItem_ = gtk_menu_item_new_with_label("Warm Amber");
+    colorRoseItem_ = gtk_menu_item_new_with_label("Soft Rose");
+    colorIndigoItem_ = gtk_menu_item_new_with_label("Muted Indigo");
 
     GtkWidget* visualMenuItem = gtk_menu_item_new_with_label("VFX Mode");
     GtkWidget* visualMenu = gtk_menu_new();
@@ -50,6 +61,7 @@ bool Tray::init(const std::string& iconPath) {
     sideRightItem_ = gtk_check_menu_item_new_with_label("Right");
     sideBottomItem_ = gtk_check_menu_item_new_with_label("Bottom");
     sideLeftItem_ = gtk_check_menu_item_new_with_label("Left");
+    surroundSyncItem_ = gtk_check_menu_item_new_with_label("Surround Sync");
 
     GtkWidget* tuningMenuItem = gtk_menu_item_new_with_label("Manual Tuning");
     GtkWidget* tuningMenu = gtk_menu_new();
@@ -81,9 +93,16 @@ bool Tray::init(const std::string& iconPath) {
     contrastGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(contrastBalancedItem_));
     contrastPunchyItem_ = gtk_radio_menu_item_new_with_label(contrastGroup, "Punchy");
 
+    g_object_set_data(G_OBJECT(colorAutoItem_), "mode", (void*)"auto");
     g_object_set_data(G_OBJECT(colorStaticItem_), "mode", (void*)"static");
     g_object_set_data(G_OBJECT(colorReactiveItem_), "mode", (void*)"reactive");
     g_object_set_data(G_OBJECT(colorSpectrumItem_), "mode", (void*)"spectrum");
+    g_object_set_data(G_OBJECT(colorVioletItem_), "color", (void*)"#7B2FFF");
+    g_object_set_data(G_OBJECT(colorBlueItem_), "color", (void*)"#246BCE");
+    g_object_set_data(G_OBJECT(colorTealItem_), "color", (void*)"#2C9690");
+    g_object_set_data(G_OBJECT(colorAmberItem_), "color", (void*)"#BD7D28");
+    g_object_set_data(G_OBJECT(colorRoseItem_), "color", (void*)"#C94D82");
+    g_object_set_data(G_OBJECT(colorIndigoItem_), "color", (void*)"#5144A8");
     g_object_set_data(G_OBJECT(visualAutoItem_), "mode", (void*)"auto");
     g_object_set_data(G_OBJECT(visualSoftAuraItem_), "mode", (void*)"soft_aura");
     g_object_set_data(G_OBJECT(visualSpectrumFlowItem_), "mode", (void*)"spectrum_flow");
@@ -110,9 +129,16 @@ bool Tray::init(const std::string& iconPath) {
     GtkWidget* quitItem = gtk_menu_item_new_with_label("Quit");
 
     g_signal_connect(toggleItem_, "activate", G_CALLBACK(onToggleClicked), this);
+    g_signal_connect(colorAutoItem_, "toggled", G_CALLBACK(onColorModeClicked), this);
     g_signal_connect(colorStaticItem_, "toggled", G_CALLBACK(onColorModeClicked), this);
     g_signal_connect(colorReactiveItem_, "toggled", G_CALLBACK(onColorModeClicked), this);
     g_signal_connect(colorSpectrumItem_, "toggled", G_CALLBACK(onColorModeClicked), this);
+    g_signal_connect(colorVioletItem_, "activate", G_CALLBACK(onPrimaryColorClicked), this);
+    g_signal_connect(colorBlueItem_, "activate", G_CALLBACK(onPrimaryColorClicked), this);
+    g_signal_connect(colorTealItem_, "activate", G_CALLBACK(onPrimaryColorClicked), this);
+    g_signal_connect(colorAmberItem_, "activate", G_CALLBACK(onPrimaryColorClicked), this);
+    g_signal_connect(colorRoseItem_, "activate", G_CALLBACK(onPrimaryColorClicked), this);
+    g_signal_connect(colorIndigoItem_, "activate", G_CALLBACK(onPrimaryColorClicked), this);
     g_signal_connect(visualAutoItem_, "toggled", G_CALLBACK(onVisualModeClicked), this);
     g_signal_connect(visualSoftAuraItem_, "toggled", G_CALLBACK(onVisualModeClicked), this);
     g_signal_connect(visualSpectrumFlowItem_, "toggled", G_CALLBACK(onVisualModeClicked), this);
@@ -122,6 +148,7 @@ bool Tray::init(const std::string& iconPath) {
     g_signal_connect(sideRightItem_, "toggled", G_CALLBACK(onSideToggled), this);
     g_signal_connect(sideBottomItem_, "toggled", G_CALLBACK(onSideToggled), this);
     g_signal_connect(sideLeftItem_, "toggled", G_CALLBACK(onSideToggled), this);
+    g_signal_connect(surroundSyncItem_, "toggled", G_CALLBACK(onSurroundSyncToggled), this);
     g_signal_connect(widthSlimItem_, "toggled", G_CALLBACK(onWidthClicked), this);
     g_signal_connect(widthComfortItem_, "toggled", G_CALLBACK(onWidthClicked), this);
     g_signal_connect(widthWideItem_, "toggled", G_CALLBACK(onWidthClicked), this);
@@ -135,10 +162,19 @@ bool Tray::init(const std::string& iconPath) {
     g_signal_connect(contrastPunchyItem_, "toggled", G_CALLBACK(onContrastClicked), this);
     g_signal_connect(quitItem, "activate", G_CALLBACK(onQuitClicked), this);
 
+    gtk_menu_shell_append(GTK_MENU_SHELL(colorMenu), colorAutoItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(colorMenu), colorStaticItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(colorMenu), colorReactiveItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(colorMenu), colorSpectrumItem_);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(colorMenuItem), colorMenu);
+
+    gtk_menu_shell_append(GTK_MENU_SHELL(presetMenu), colorVioletItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(presetMenu), colorBlueItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(presetMenu), colorTealItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(presetMenu), colorAmberItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(presetMenu), colorRoseItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(presetMenu), colorIndigoItem_);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(presetMenuItem), presetMenu);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(visualMenu), visualAutoItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(visualMenu), visualSoftAuraItem_);
@@ -151,6 +187,8 @@ bool Tray::init(const std::string& iconPath) {
     gtk_menu_shell_append(GTK_MENU_SHELL(sideMenu), sideRightItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(sideMenu), sideBottomItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(sideMenu), sideLeftItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(sideMenu), gtk_separator_menu_item_new());
+    gtk_menu_shell_append(GTK_MENU_SHELL(sideMenu), surroundSyncItem_);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(sideMenuItem), sideMenu);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(widthMenu), widthSlimItem_);
@@ -178,6 +216,7 @@ bool Tray::init(const std::string& iconPath) {
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), toggleItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator1);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), colorMenuItem);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_), presetMenuItem);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), visualMenuItem);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), sideMenuItem);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), tuningMenuItem);
@@ -208,12 +247,20 @@ void Tray::setOnColorMode(std::function<void(const std::string&)> cb) {
     onColorMode_ = cb;
 }
 
+void Tray::setOnPrimaryColor(std::function<void(const std::string&)> cb) {
+    onPrimaryColor_ = cb;
+}
+
 void Tray::setOnVisualMode(std::function<void(const std::string&)> cb) {
     onVisualMode_ = cb;
 }
 
 void Tray::setOnSideToggle(std::function<void(const std::string&, bool)> cb) {
     onSideToggle_ = cb;
+}
+
+void Tray::setOnSurroundSync(std::function<void(bool)> cb) {
+    onSurroundSync_ = cb;
 }
 
 void Tray::setOnEdgeWidth(std::function<void(int)> cb) {
@@ -237,6 +284,7 @@ void Tray::setVisible(bool visible) {
 
 void Tray::syncConfig(const AppConfig& config) {
     syncing_ = true;
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(colorAutoItem_), config.colorMode == "auto");
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(colorStaticItem_), config.colorMode == "static");
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(colorReactiveItem_), config.colorMode == "reactive");
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(colorSpectrumItem_), config.colorMode == "spectrum");
@@ -249,6 +297,7 @@ void Tray::syncConfig(const AppConfig& config) {
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(sideRightItem_), config.sideRight);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(sideBottomItem_), config.sideBottom);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(sideLeftItem_), config.sideLeft);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(surroundSyncItem_), config.surroundSync);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widthSlimItem_), config.edgeWidth <= 13);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widthComfortItem_), config.edgeWidth > 13 && config.edgeWidth <= 23);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widthWideItem_), config.edgeWidth > 23 && config.edgeWidth <= 35);
@@ -279,6 +328,15 @@ void Tray::onColorModeClicked(GtkCheckMenuItem* item, void* data) {
     }
 }
 
+void Tray::onPrimaryColorClicked(GtkMenuItem* item, void* data) {
+    Tray* self = static_cast<Tray*>(data);
+    if (self->syncing_) return;
+    const char* color = static_cast<const char*>(g_object_get_data(G_OBJECT(item), "color"));
+    if (color && self->onPrimaryColor_) {
+        self->onPrimaryColor_(color);
+    }
+}
+
 void Tray::onVisualModeClicked(GtkCheckMenuItem* item, void* data) {
     Tray* self = static_cast<Tray*>(data);
     if (self->syncing_ || !gtk_check_menu_item_get_active(item)) return;
@@ -294,6 +352,14 @@ void Tray::onSideToggled(GtkCheckMenuItem* item, void* data) {
     const char* side = static_cast<const char*>(g_object_get_data(G_OBJECT(item), "side"));
     if (side && self->onSideToggle_) {
         self->onSideToggle_(side, gtk_check_menu_item_get_active(item));
+    }
+}
+
+void Tray::onSurroundSyncToggled(GtkCheckMenuItem* item, void* data) {
+    Tray* self = static_cast<Tray*>(data);
+    if (self->syncing_) return;
+    if (self->onSurroundSync_) {
+        self->onSurroundSync_(gtk_check_menu_item_get_active(item));
     }
 }
 

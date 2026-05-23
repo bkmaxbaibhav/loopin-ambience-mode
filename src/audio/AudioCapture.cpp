@@ -1,6 +1,7 @@
 #include "AudioCapture.h"
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -36,11 +37,18 @@ int AudioCapture::paCallback(const void* inputBuffer, void* outputBuffer,
 
 void AudioCapture::pushSamples(const float* input, unsigned long frames) {
     std::lock_guard<std::mutex> lock(bufferMutex_);
+    float leftSumSq = 0.0f;
+    float rightSumSq = 0.0f;
     for (unsigned long i = 0; i < frames; ++i) {
         // Mixdown to mono based on channel count
+        float left = channels_ == 2 ? input[i * 2] : input[i];
+        float right = channels_ == 2 ? input[i * 2 + 1] : left;
         float mono = (channels_ == 2)
-            ? (input[i * 2] + input[i * 2 + 1]) * 0.5f
-            : input[i];
+            ? (left + right) * 0.5f
+            : left;
+
+        leftSumSq += left * left;
+        rightSumSq += right * right;
 
         ringBuffer_[writePos_] = mono;
         writePos_ = (writePos_ + 1) % RING_BUFFER_SIZE;
@@ -51,6 +59,13 @@ void AudioCapture::pushSamples(const float* input, unsigned long frames) {
             // Overwrite policy: advance readPos to keep up with writePos
             readPos_ = (readPos_ + 1) % RING_BUFFER_SIZE;
         }
+    }
+
+    if (frames > 0) {
+        float leftRms = std::sqrt(leftSumSq / static_cast<float>(frames));
+        float rightRms = std::sqrt(rightSumSq / static_cast<float>(frames));
+        leftLevel_ = 0.82f * leftLevel_ + 0.18f * leftRms;
+        rightLevel_ = 0.82f * rightLevel_ + 0.18f * rightRms;
     }
 }
 
@@ -305,6 +320,16 @@ void AudioCapture::stop() {
 
 bool AudioCapture::isRunning() const {
     return running_.load();
+}
+
+float AudioCapture::getLeftLevel() const {
+    std::lock_guard<std::mutex> lock(bufferMutex_);
+    return leftLevel_;
+}
+
+float AudioCapture::getRightLevel() const {
+    std::lock_guard<std::mutex> lock(bufferMutex_);
+    return rightLevel_;
 }
 
 std::vector<float> AudioCapture::readSamples() {

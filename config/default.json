@@ -1,17 +1,18 @@
 {
   "all_monitors": false,
   "autostart": false,
-  "color_mode": "reactive",
-  "contrast": 1.350000023841858,
+  "color_mode": "auto",
+  "contrast": 1.0,
   "debug_mode": true,
-  "edge_width": 18,
+  "edge_width": 28,
   "focus_mode": true,
   "fps_cap": 60,
-  "intensity": 0.8999999761581421,
-  "primary_color": "#7B2FFF",
+  "intensity": 0.550000011920929,
+  "primary_color": "#C94D82",
   "side_bottom": true,
   "side_left": true,
   "side_right": true,
   "side_top": true,
+  "surround_sync": true,
   "visual_mode": "auto"
 }

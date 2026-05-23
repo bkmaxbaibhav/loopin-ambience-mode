@@ -134,6 +134,11 @@ int main(int argc, char** argv) {
         config.colorMode = mode;
         saveMenuConfig();
     });
+    tray.setOnPrimaryColor([&](const std::string& color) {
+        config.primaryColor = color;
+        config.colorMode = "static";
+        saveMenuConfig();
+    });
     tray.setOnVisualMode([&](const std::string& mode) {
         config.visualMode = mode;
         saveMenuConfig();
@@ -151,6 +156,10 @@ int main(int argc, char** argv) {
             else if (side == "left") config.sideLeft = true;
         }
 
+        saveMenuConfig();
+    });
+    tray.setOnSurroundSync([&](bool enabled) {
+        config.surroundSync = enabled;
         saveMenuConfig();
     });
     tray.setOnEdgeWidth([&](int width) {
@@ -223,12 +232,17 @@ int main(int argc, char** argv) {
             fft.getBass(),
             fft.getMid(),
             fft.getTreble(),
-            fft.isSilent()
+            fft.isSilent(),
+            capture.getLeftLevel(),
+            capture.getRightLevel(),
+            config.surroundSync
         );
         if (visualTestMode) {
             params.bassIntensity = 1.0f;
             params.midIntensity = 1.0f;
             params.trebleIntensity = 1.0f;
+            params.leftIntensity = 1.0f;
+            params.rightIntensity = 1.0f;
             params.beatPulse = 0.8f + 0.2f * std::sin(
                 std::chrono::duration<float>(
                     std::chrono::steady_clock::now().time_since_epoch()
@@ -248,6 +262,8 @@ int main(int argc, char** argv) {
                           << " treble=" << fft.getTreble()
                           << " beat=" << params.beatPulse
                           << " genre_conf=" << params.genreConfidence
+                          << " left=" << capture.getLeftLevel()
+                          << " right=" << capture.getRightLevel()
                           << " silent=" << (fft.isSilent() ? "true" : "false")
                           << std::endl;
                 lastDebugTime = debugNow;

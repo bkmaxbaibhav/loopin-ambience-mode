@@ -60,7 +60,10 @@ float scoreGenre(const GenreSignature& genre,
 VisualParams BandMapper::map(float bass,
                               float mid,
                               float treble,
-                              bool isSilent) {
+                              bool isSilent,
+                              float leftLevel,
+                              float rightLevel,
+                              bool surroundSync) {
     VisualParams params;
     params.isSilent = isSilent;
 
@@ -73,6 +76,17 @@ VisualParams BandMapper::map(float bass,
     params.bassIntensity   = liftBand(bass,   10.0f); // bottom edge
     params.midIntensity    = liftBand(mid,    24.0f); // side edges
     params.trebleIntensity = liftBand(treble, 80.0f); // top edge
+    params.leftIntensity = params.midIntensity;
+    params.rightIntensity = params.midIntensity;
+
+    if (surroundSync) {
+        float stereoTotal = leftLevel + rightLevel + 0.0001f;
+        float leftShare = leftLevel / stereoTotal;
+        float rightShare = rightLevel / stereoTotal;
+        float stereoEnergy = liftBand((leftLevel + rightLevel) * 0.5f, 18.0f);
+        params.leftIntensity = std::clamp(stereoEnergy * std::pow(leftShare * 2.0f, 1.25f), 0.0f, 1.0f);
+        params.rightIntensity = std::clamp(stereoEnergy * std::pow(rightShare * 2.0f, 1.25f), 0.0f, 1.0f);
+    }
 
     bassFloor_ = 0.985f * bassFloor_ + 0.015f * bass;
     float bassLift = std::max(0.0f, bass - bassFloor_);

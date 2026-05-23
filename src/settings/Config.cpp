@@ -31,6 +31,7 @@ AppConfig Config::load(const std::string& path) {
     config.sideRight    = j.value("side_right",   true);
     config.sideBottom   = j.value("side_bottom",  true);
     config.sideLeft     = j.value("side_left",    true);
+    config.surroundSync = j.value("surround_sync", false);
     config.focusMode    = j.value("focus_mode",   true);
     config.autostart    = j.value("autostart",    false);
     config.allMonitors  = j.value("all_monitors", false);
@@ -55,7 +56,10 @@ AppConfig Config::validate(AppConfig config) {
     config.edgeWidth = std::clamp(config.edgeWidth, 4, 64);
     config.fpsCap = std::clamp(config.fpsCap, 15, 240);
 
-    if (config.colorMode != "static" && config.colorMode != "reactive" && config.colorMode != "spectrum") {
+    if (config.colorMode != "static" &&
+        config.colorMode != "reactive" &&
+        config.colorMode != "spectrum" &&
+        config.colorMode != "auto") {
         std::cout << "[AMBIENCE] Invalid color_mode — using reactive" << std::endl;
         config.colorMode = "reactive";
     }
@@ -110,6 +114,7 @@ void Config::save(const AppConfig& config, const std::string& path) {
     j["side_right"]    = config.sideRight;
     j["side_bottom"]   = config.sideBottom;
     j["side_left"]     = config.sideLeft;
+    j["surround_sync"] = config.surroundSync;
     j["focus_mode"]    = config.focusMode;
     j["autostart"]     = config.autostart;
     j["all_monitors"]  = config.allMonitors;

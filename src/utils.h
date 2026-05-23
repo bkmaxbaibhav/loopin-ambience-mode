@@ -10,6 +10,7 @@ inline int colorModeFromString(const std::string& mode) {
     if (mode == "static")   return 0;
     if (mode == "reactive") return 1;
     if (mode == "spectrum") return 2;
+    if (mode == "auto")     return 3;
     return 1; // Default to reactive
 }
 

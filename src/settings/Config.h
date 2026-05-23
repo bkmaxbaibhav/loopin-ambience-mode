@@ -15,6 +15,7 @@ struct AppConfig {
     bool        sideRight     = true;
     bool        sideBottom    = true;
     bool        sideLeft      = true;
+    bool        surroundSync  = false;
     bool        focusMode     = true;
     bool        autostart     = false;
     bool        allMonitors   = false;
