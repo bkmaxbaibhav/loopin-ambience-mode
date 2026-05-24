@@ -1,6 +1,7 @@
 {
   "all_monitors": false,
   "autostart": false,
+  "audio_source": "",
   "color_mode": "auto",
   "contrast": 1.0,
   "debug_mode": true,
@@ -8,6 +9,8 @@
   "focus_mode": true,
   "fps_cap": 60,
   "intensity": 0.550000011920929,
+  "overlay_visible": true,
+  "party_mode": false,
   "primary_color": "#C94D82",
   "side_bottom": true,
   "side_left": true,

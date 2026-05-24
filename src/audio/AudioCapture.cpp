@@ -23,6 +23,14 @@ AudioCapture::~AudioCapture() {
     stop();
 }
 
+void AudioCapture::setPreferredSource(const std::string& source) {
+    preferredSource_ = source;
+}
+
+std::string AudioCapture::getActiveSource() const {
+    return activeSource_;
+}
+
 int AudioCapture::paCallback(const void* inputBuffer, void* outputBuffer,
                              unsigned long framesPerBuffer,
                              const PaStreamCallbackTimeInfo* timeInfo,
@@ -70,42 +78,73 @@ void AudioCapture::pushSamples(const float* input, unsigned long frames) {
 }
 
 #ifdef __linux__
+bool AudioCapture::isSafePulseSourceName(const std::string& source) const {
+    if (source.empty()) return false;
+    for (char c : source) {
+        if (!(std::isalnum(static_cast<unsigned char>(c)) ||
+              c == '_' || c == '-' || c == '.')) {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::string AudioCapture::findPulseMonitorSource() const {
     if (const char* source = getenv("AMBIENCE_PULSE_SOURCE")) {
         if (strlen(source) > 0) return source;
+    }
+
+    std::string defaultMonitor;
+    FILE* defaultSinkPipe = popen("pactl get-default-sink 2>/dev/null", "r");
+    if (defaultSinkPipe) {
+        std::array<char, 512> buffer{};
+        if (fgets(buffer.data(), buffer.size(), defaultSinkPipe)) {
+            std::string sink(buffer.data());
+            sink.erase(std::remove(sink.begin(), sink.end(), '\n'), sink.end());
+            sink.erase(std::remove(sink.begin(), sink.end(), '\r'), sink.end());
+            if (!sink.empty()) {
+                defaultMonitor = sink + ".monitor";
+            }
+        }
+        pclose(defaultSinkPipe);
     }
 
     FILE* pipe = popen("pactl list short sources", "r");
     if (!pipe) return "";
 
     std::array<char, 512> buffer{};
-    std::string selected;
+    std::string fallback;
     while (fgets(buffer.data(), buffer.size(), pipe)) {
         std::istringstream line(buffer.data());
         std::string index;
         std::string name;
         line >> index >> name;
         if (name.find(".monitor") != std::string::npos) {
-            selected = name;
-            break;
+            if (name == defaultMonitor) {
+                pclose(pipe);
+                return name;
+            }
+            if (!preferredSource_.empty() && name == preferredSource_) {
+                fallback = name;
+            }
+            if (fallback.empty()) {
+                fallback = name;
+            }
         }
     }
 
     pclose(pipe);
-    return selected;
+    return fallback;
 }
 
 bool AudioCapture::startPulseMonitor() {
     std::string source = findPulseMonitorSource();
     if (source.empty()) return false;
 
-    for (char c : source) {
-        if (!(std::isalnum(static_cast<unsigned char>(c)) ||
-              c == '_' || c == '-' || c == '.')) {
-            std::cerr << "[AMBIENCE] Ignoring unsafe PulseAudio source name: "
-                      << source << std::endl;
-            return false;
-        }
+    if (!isSafePulseSourceName(source)) {
+        std::cerr << "[AMBIENCE] Ignoring unsafe PulseAudio source name: "
+                  << source << std::endl;
+        return false;
     }
 
     std::string command =
@@ -117,8 +156,8 @@ bool AudioCapture::startPulseMonitor() {
 
     channels_ = 2;
     running_.store(true);
+    activeSource_ = source;
     std::cout << "[AMBIENCE] PulseAudio monitor source: " << source << std::endl;
-
     pulseThread_ = std::thread([this]() {
         std::array<int16_t, 256 * 2> raw{};
         std::vector<float> samples(raw.size(), 0.0f);
@@ -143,6 +182,7 @@ bool AudioCapture::startPulseMonitor() {
 
 bool AudioCapture::start() {
     if (running_.load()) return true;
+    activeSource_.clear();
 
 #ifdef __linux__
     if (!getenv("AMBIENCE_DISABLE_PULSE") && startPulseMonitor()) {
@@ -246,6 +286,7 @@ bool AudioCapture::start() {
             err = Pa_OpenStream(&stream_, &inputParameters, nullptr, SAMPLE_RATE,
                                 paFramesPerBufferUnspecified, paNoFlag, paCallback, this);
             if (err == paNoError) {
+                activeSource_ = info->name ? info->name : "";
                 std::cout << "[AMBIENCE] Audio capture device: "
                           << (info->name ? info->name : "unknown") << std::endl;
             } else {
@@ -294,7 +335,10 @@ bool AudioCapture::start() {
 }
 
 void AudioCapture::stop() {
-    if (!running_.load()) return;
+    if (!running_.load() && !pulsePipe_ && !pulseThread_.joinable() &&
+        !simulationThread_.joinable() && !stream_ && !paInitialized_) {
+        return;
+    }
 
     running_.store(false);
     if (pulsePipe_) {

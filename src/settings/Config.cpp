@@ -3,8 +3,41 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
 
 using json = nlohmann::json;
+
+std::string Config::userConfigPath() {
+    const char* configHome = getenv("XDG_CONFIG_HOME");
+    if (configHome && configHome[0] != '\0') {
+        return std::string(configHome) + "/loopin-ambience-mode/config.json";
+    }
+
+    const char* home = getenv("HOME");
+    if (home && home[0] != '\0') {
+        return std::string(home) + "/.config/loopin-ambience-mode/config.json";
+    }
+
+    return "loopin-ambience-mode-config.json";
+}
+
+AppConfig Config::loadOrCreateUserConfig(const std::string& seedPath) {
+    const std::string path = userConfigPath();
+    if (std::filesystem::exists(path)) {
+        return load(path);
+    }
+
+    AppConfig config;
+    if (!seedPath.empty() && std::filesystem::exists(seedPath)) {
+        config = load(seedPath);
+    } else {
+        config = validate(AppConfig{});
+    }
+
+    save(config, path);
+    return config;
+}
 
 AppConfig Config::load(const std::string& path) {
     std::ifstream file(path);
@@ -34,8 +67,11 @@ AppConfig Config::load(const std::string& path) {
     config.surroundSync = j.value("surround_sync", false);
     config.focusMode    = j.value("focus_mode",   true);
     config.autostart    = j.value("autostart",    false);
+    config.overlayVisible = j.value("overlay_visible", true);
+    config.partyMode    = j.value("party_mode", false);
     config.allMonitors  = j.value("all_monitors", false);
     config.debugMode    = j.value("debug_mode",   false);
+    config.audioSource  = j.value("audio_source", "");
 
     config = validate(config);
 
@@ -68,7 +104,8 @@ AppConfig Config::validate(AppConfig config) {
         config.visualMode != "soft_aura" &&
         config.visualMode != "spectrum_flow" &&
         config.visualMode != "beat_bloom" &&
-        config.visualMode != "corner_hits") {
+        config.visualMode != "corner_hits" &&
+        config.visualMode != "neon_rails") {
         std::cout << "[AMBIENCE] Invalid visual_mode — using auto" << std::endl;
         config.visualMode = "auto";
     }
@@ -117,8 +154,20 @@ void Config::save(const AppConfig& config, const std::string& path) {
     j["surround_sync"] = config.surroundSync;
     j["focus_mode"]    = config.focusMode;
     j["autostart"]     = config.autostart;
+    j["overlay_visible"] = config.overlayVisible;
+    j["party_mode"]    = config.partyMode;
     j["all_monitors"]  = config.allMonitors;
     j["debug_mode"]    = config.debugMode;
+    j["audio_source"]  = config.audioSource;
+
+    try {
+        std::filesystem::path filePath(path);
+        if (filePath.has_parent_path()) {
+            std::filesystem::create_directories(filePath.parent_path());
+        }
+    } catch (...) {
+        std::cout << "[AMBIENCE] Failed to create config directory for " << path << std::endl;
+    }
 
     std::ofstream file(path);
     if (!file.is_open()) {

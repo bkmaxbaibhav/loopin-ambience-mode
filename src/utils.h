@@ -20,6 +20,7 @@ inline int visualModeFromString(const std::string& mode) {
     if (mode == "spectrum_flow") return 2;
     if (mode == "beat_bloom")    return 3;
     if (mode == "corner_hits")   return 4;
+    if (mode == "neon_rails")    return 5;
     return 0;
 }
 

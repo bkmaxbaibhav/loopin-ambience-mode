@@ -3,6 +3,20 @@
 #include <iostream>
 #include <cstdlib>
 
+namespace {
+std::string quoteDesktopExec(const std::string& value) {
+    std::string quoted = "\"";
+    for (char c : value) {
+        if (c == '"' || c == '\\') {
+            quoted += '\\';
+        }
+        quoted += c;
+    }
+    quoted += "\"";
+    return quoted;
+}
+}
+
 std::string AutoStart::getDesktopFilePath() {
     const char* home = getenv("HOME");
     if (!home) return "";
@@ -27,7 +41,7 @@ bool AutoStart::enable(const std::string& execPath) {
              << "Type=Application\n"
              << "Name=Loopin Ambience Mode\n"
              << "Comment=Audio reactive screen border\n"
-             << "Exec=" << execPath << "\n"
+             << "Exec=" << quoteDesktopExec(execPath) << "\n"
              << "Icon=loopin-ambience-mode\n"
              << "Hidden=false\n"
              << "NoDisplay=false\n"

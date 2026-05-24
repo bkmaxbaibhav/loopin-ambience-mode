@@ -141,9 +141,10 @@ void Overlay::render(const VisualParams& params) {
     float time = std::chrono::duration<float>(now - appStart_).count();
     shader_.setFloat("uTime", time);
 
-    shader_.setFloat("uEdgeWidth", edgeWidth_);
-    shader_.setFloat("uIntensity", intensity_ * combinedFade);
-    shader_.setFloat("uContrast", contrast_);
+    float modeBoost = partyMode_ ? 1.65f : 1.0f;
+    shader_.setFloat("uEdgeWidth", edgeWidth_ * (partyMode_ ? 1.35f : 1.0f));
+    shader_.setFloat("uIntensity", intensity_ * modeBoost * combinedFade);
+    shader_.setFloat("uContrast", contrast_ * (partyMode_ ? 1.18f : 1.0f));
     shader_.setVec3("uPrimaryColor", primaryColor_[0], primaryColor_[1], primaryColor_[2]);
 
     shader_.setFloat("uIntensityTop",    params.trebleIntensity * combinedFade);
@@ -158,6 +159,7 @@ void Overlay::render(const VisualParams& params) {
     shader_.setInt("uColorMode", params.colorMode);
     shader_.setInt("uVisualMode", visualMode_);
     shader_.setInt("uSideMask", sideMask_);
+    shader_.setInt("uPartyMode", partyMode_ ? 1 : 0);
     shader_.setFloat("uHue", params.hue);
 
     glBindVertexArray(VAO_);
@@ -186,6 +188,7 @@ void Overlay::setConfig(const AppConfig& config) {
     colorMode_ = colorModeFromString(config.colorMode);
     visualMode_ = visualModeFromString(config.visualMode);
     fpsCap_ = config.fpsCap;
+    partyMode_ = config.partyMode;
     frameTarget_ = std::chrono::microseconds(1000000 / config.fpsCap);
 }
 

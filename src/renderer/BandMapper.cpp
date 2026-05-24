@@ -73,9 +73,10 @@ VisualParams BandMapper::map(float bass,
 
     // PortAudio/Pulse monitor FFT values are small in normal desktop playback,
     // so compress the range before sending it to the visual layer.
-    params.bassIntensity   = liftBand(bass,   10.0f); // bottom edge
-    params.midIntensity    = liftBand(mid,    24.0f); // side edges
-    params.trebleIntensity = liftBand(treble, 80.0f); // top edge
+    float partyGain = partyMode_ ? 1.65f : 1.0f;
+    params.bassIntensity   = liftBand(bass,   10.0f * partyGain); // bottom edge
+    params.midIntensity    = liftBand(mid,    24.0f * partyGain); // side edges
+    params.trebleIntensity = liftBand(treble, 80.0f * partyGain); // top edge
     params.leftIntensity = params.midIntensity;
     params.rightIntensity = params.midIntensity;
 
@@ -83,15 +84,15 @@ VisualParams BandMapper::map(float bass,
         float stereoTotal = leftLevel + rightLevel + 0.0001f;
         float leftShare = leftLevel / stereoTotal;
         float rightShare = rightLevel / stereoTotal;
-        float stereoEnergy = liftBand((leftLevel + rightLevel) * 0.5f, 18.0f);
+        float stereoEnergy = liftBand((leftLevel + rightLevel) * 0.5f, 18.0f * partyGain);
         params.leftIntensity = std::clamp(stereoEnergy * std::pow(leftShare * 2.0f, 1.25f), 0.0f, 1.0f);
         params.rightIntensity = std::clamp(stereoEnergy * std::pow(rightShare * 2.0f, 1.25f), 0.0f, 1.0f);
     }
 
     bassFloor_ = 0.985f * bassFloor_ + 0.015f * bass;
     float bassLift = std::max(0.0f, bass - bassFloor_);
-    float beatHit = std::clamp(bassLift * 9.0f + params.bassIntensity * 0.45f, 0.0f, 1.0f);
-    beatPulse_ = std::max(beatHit, beatPulse_ * 0.86f);
+    float beatHit = std::clamp(bassLift * (partyMode_ ? 14.0f : 6.0f) + params.bassIntensity * (partyMode_ ? 0.62f : 0.28f), 0.0f, 1.0f);
+    beatPulse_ = std::max(beatHit, beatPulse_ * (partyMode_ ? 0.80f : 0.93f));
     params.beatPulse = isSilent ? 0.0f : beatPulse_;
 
     avgBass_ = 0.992f * avgBass_ + 0.008f * bass;

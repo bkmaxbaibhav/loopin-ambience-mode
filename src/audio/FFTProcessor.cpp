@@ -42,7 +42,7 @@ void FFTProcessor::process(const std::vector<float>& samples) {
     float rms = std::sqrt(sumSq / 1024.0f);
 
     auto now = std::chrono::steady_clock::now();
-    if (rms >= 0.01f) {
+    if (rms >= 0.0015f) {
         lastSoundTime_ = now;
         silent_ = false;
     } else {

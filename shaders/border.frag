@@ -19,12 +19,18 @@ uniform float uGenreConfidence;
 uniform int   uColorMode;
 uniform int   uVisualMode;
 uniform int   uSideMask;
+uniform int   uPartyMode;
 uniform float uHue;
 
 vec3 hsv2rgb(float h, float s, float v) {
     vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
     vec3 p = abs(fract(vec3(h) + K.xyz) * 6.0 - K.www);
     return v * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), s);
+}
+
+float segmentBand(float x, float start, float end, float feather) {
+    return smoothstep(start, start + feather, x) *
+           (1.0 - smoothstep(end - feather, end, x));
 }
 
 void main() {
@@ -46,19 +52,20 @@ void main() {
                         min(activeTop, activeBottom));
 
     float beat = clamp(uBeat, 0.0, 1.0);
+    float party = uPartyMode == 1 ? 1.0 : 0.0;
     int mode = uVisualMode;
     if (mode == 0) {
-        mode = beat > 0.55 ? 3 : 1;
+        mode = beat > mix(0.82, 0.58, party) ? 3 : 1;
     }
 
     float genreMix = clamp(uGenreConfidence, 0.0, 0.8);
     float comfort = mode == 1 ? 1.0 : 0.0;
     float bloomScale = (mode == 3 ? 1.0 : 0.65) * mix(1.0, uGenreWarmth, genreMix * 0.18);
-    float glowRadius = max(uEdgeWidth * (4.2 + beat * 1.45 * bloomScale), 40.0);
+    float glowRadius = max(uEdgeWidth * (4.2 + beat * 1.45 * bloomScale + party * 1.55), 40.0 + party * 32.0);
     if (minDist > glowRadius) discard;
 
     // Comfort-first breath layer: slow, peripheral-safe brightness motion.
-    float pulse = 0.88 + 0.12 * sin(uTime * 1.15 + beat * 1.35);
+    float pulse = 0.92 + 0.08 * sin(uTime * mix(0.55, 1.05, party) + beat * mix(0.55, 1.25, party));
 
     // Ticket 2: Edge detection
     bool isBottom = (activeBottom <= activeLeft &&
@@ -85,8 +92,8 @@ void main() {
     float posLeft   = vUV.y;
     float posRight  = vUV.y;
 
-    float flowSpeed = mode == 2 ? 2.0 : 1.0;
-    float waveDepth = mix(0.22, 0.08, comfort);
+    float flowSpeed = mode == 2 ? mix(1.15, 2.0, party) : mix(0.55, 1.0, party);
+    float waveDepth = mix(0.16, 0.045, comfort) + party * 0.05;
     float waveBottom = (1.0 - waveDepth) + waveDepth * sin(posBottom * 6.28 + uTime * 2.0 * flowSpeed);
     float waveTop    = (1.0 - waveDepth) + waveDepth * sin(posTop    * 6.28 - uTime * 2.0 * flowSpeed);
     float waveLeft   = (1.0 - waveDepth) + waveDepth * sin(posLeft   * 6.28 + uTime * 1.5 * flowSpeed);
@@ -110,6 +117,8 @@ void main() {
 
     float finalEdgeIntensity = edgeIntensity;
     float finalEdgeWave = edgeWave;
+    float segmentMask = 1.0;
+    float railHotspot = 0.0;
 
     // For simplicity and to match Ticket 4 requirements while keeping Ticket 2/3 logic:
     // If we are near a corner, we blend.
@@ -139,6 +148,39 @@ void main() {
         finalEdgeWave = mix(waveTop, waveRight, weight);
     }
 
+    if (mode == 5) {
+        float railFeather = 0.035;
+        float railPosition = isBottom ? vUV.x
+                           : isTop    ? vUV.x
+                           : isLeft   ? vUV.y
+                           :            vUV.y;
+
+        float topRail = segmentBand(vUV.x, 0.16, 0.58, railFeather) +
+                        segmentBand(vUV.x, 0.70, 0.86, railFeather);
+        float bottomRail = segmentBand(vUV.x, 0.16, 0.66, railFeather);
+        float leftRail = segmentBand(vUV.y, 0.16, 0.38, railFeather) +
+                         segmentBand(vUV.y, 0.74, 0.88, railFeather);
+        float rightRail = segmentBand(vUV.y, 0.16, 0.84, railFeather);
+
+        segmentMask = isBottom ? bottomRail
+                    : isTop    ? topRail
+                    : isLeft   ? leftRail
+                    :            rightRail;
+        segmentMask = clamp(segmentMask, 0.0, 1.0);
+
+        float leftBottomCorner = exp(-length(vec2(distLeft, distBottom)) / max(uEdgeWidth * 0.95, 1.0));
+        float rightBottomCorner = exp(-length(vec2(distRight, distBottom)) / max(uEdgeWidth * 0.95, 1.0));
+        float leftTopCorner = exp(-length(vec2(distLeft, distTop)) / max(uEdgeWidth * 0.78, 1.0));
+        float rightTopCorner = exp(-length(vec2(distRight, distTop)) / max(uEdgeWidth * 0.78, 1.0));
+        segmentMask = max(segmentMask, max(max(leftBottomCorner, rightBottomCorner), max(leftTopCorner, rightTopCorner)) * 0.82);
+
+        float movingHead = fract(uTime * (0.13 + party * 0.12) + beat * 0.12);
+        float headA = exp(-pow(abs(railPosition - movingHead) / 0.045, 2.0));
+        float headB = exp(-pow(abs(railPosition - fract(movingHead + 0.52)) / 0.06, 2.0));
+        railHotspot = (headA + headB * 0.58) * segmentMask;
+        finalEdgeWave = mix(1.0, finalEdgeWave, 0.28) + railHotspot * (0.48 + beat * 0.22);
+    }
+
     float core = 1.0 - smoothstep(0.0, uEdgeWidth, minDist);
     float aura = exp(-(minDist * minDist) / (glowRadius * glowRadius * 0.18));
     float glow = max(core, aura * 0.82);
@@ -152,9 +194,14 @@ void main() {
     }
 
     float shapedIntensity = pow(clamp(finalEdgeIntensity, 0.0, 1.0), 1.0 / max(uContrast, 0.01));
-    float audioFloor = mix(0.34, 0.92, shapedIntensity);
-    float beatExpansion = 1.0 + beat * 0.52 * bloomScale;
-    float finalGlow = glow * pulse * audioFloor * finalEdgeWave * beatExpansion * uIntensity;
+    float audioFloor = mix(0.34 + party * 0.22, 0.92 + party * 0.16, shapedIntensity);
+    float beatExpansion = 1.0 + beat * mix(0.24, 0.94, party) * bloomScale;
+    float daylightLift = 1.0 + party * (0.45 + shapedIntensity * 0.55);
+    float finalGlow = glow * pulse * audioFloor * finalEdgeWave * beatExpansion * daylightLift * uIntensity;
+    if (mode == 5) {
+        finalGlow *= segmentMask;
+        finalGlow += glow * railHotspot * (0.85 + party * 0.35) * uIntensity;
+    }
 
     vec3 finalColor;
     if (uColorMode == 0) {
@@ -162,7 +209,7 @@ void main() {
         finalColor = uPrimaryColor;
     } else if (uColorMode == 1) {
         // Reactive Hue Mode
-        finalColor = hsv2rgb(uHue, 0.72 + beat * 0.12, 1.0);
+        finalColor = hsv2rgb(uHue, 0.72 + beat * (0.12 + party * 0.10), 1.0);
     } else if (uColorMode == 3) {
         // Auto Colors: comfort palette biased by genre and edge position.
         float edgePosition;
@@ -171,9 +218,14 @@ void main() {
         else if (isLeft) edgePosition = vUV.y;
         else edgePosition = vUV.y;
 
-        float warmShift = (uGenreWarmth - 1.0) * 0.035 * genreMix;
-        float autoHue = fract(uHue + edgePosition * 0.08 - warmShift + beat * 0.035);
-        float saturation = mix(0.58, 0.78, beat) * mix(1.0, 0.94 + uGenrePresence * 0.045, genreMix);
+        float paletteFlow = edgePosition * (0.34 + party * 0.12)
+                          + uTime * (0.012 + party * 0.028)
+                          + finalEdgeIntensity * (0.10 + party * 0.08)
+                          + beat * (0.055 + party * 0.045);
+        float warmShift = (uGenreWarmth - 1.0) * 0.018 * genreMix;
+        float presenceShift = (uGenrePresence - 1.0) * 0.035 * genreMix;
+        float autoHue = fract(uHue * 0.42 + paletteFlow + presenceShift - warmShift);
+        float saturation = clamp(mix(0.60 + party * 0.12, 0.84 + party * 0.12, beat) * mix(1.0, 0.98 + uGenrePresence * 0.03, genreMix), 0.0, 1.0);
         finalColor = hsv2rgb(autoHue, saturation, 1.0);
     } else {
         // Spectrum Rainbow Mode (Ticket 3)
@@ -188,11 +240,17 @@ void main() {
         float spectrumHue = fract(edgePosition * 0.72 + uTime * hueSpeed + finalEdgeIntensity * 0.12 + beat * 0.025);
         float warmShift = (uGenreWarmth - 1.0) * 0.025 * genreMix;
         spectrumHue = fract(spectrumHue - warmShift);
-        float saturation = mix(0.62, 0.82, beat) * mix(1.0, 0.93 + uGenrePresence * 0.05, genreMix);
+        float saturation = clamp(mix(0.62 + party * 0.10, 0.82 + party * 0.14, beat) * mix(1.0, 0.93 + uGenrePresence * 0.05, genreMix), 0.0, 1.0);
         finalColor = hsv2rgb(spectrumHue, saturation, 1.0);
     }
 
+    if (mode == 5) {
+        vec3 railBlue = vec3(0.32, 0.42, 1.0);
+        vec3 railWhite = vec3(0.92, 0.96, 1.0);
+        finalColor = mix(mix(finalColor, railBlue, 0.68), railWhite, clamp(core * 0.72 + railHotspot * 0.5, 0.0, 0.82));
+    }
+
     finalGlow *= cornerBoost;
-    float alpha = clamp(finalGlow * (0.58 + beat * 0.18), 0.0, 0.78);
+    float alpha = clamp(finalGlow * (0.58 + beat * 0.18 + party * 0.18), 0.0, 0.78 + party * 0.18);
     FragColor = vec4(finalColor * finalGlow, alpha);
 }

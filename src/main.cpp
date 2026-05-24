@@ -35,12 +35,13 @@ int main(int argc, char** argv) {
 
     std::cout << "loopin-ambience-mode starting..." << std::endl;
 
-    // a. Load config
-    std::string configPath = "config/default.json";
-    if (!fs::exists(configPath)) {
-        configPath = "/etc/loopin-ambience-mode/default.json";
+    // a. Load per-user config, seeding it from install defaults on first run.
+    std::string seedConfigPath = "config/default.json";
+    if (!fs::exists(seedConfigPath)) {
+        seedConfigPath = "/etc/loopin-ambience-mode/default.json";
     }
-    AppConfig config = Config::load(configPath);
+    std::string configPath = Config::userConfigPath();
+    AppConfig config = Config::loadOrCreateUserConfig(seedConfigPath);
     if (getenv("AMBIENCE_DEBUG")) {
         config.debugMode = true;
     }
@@ -73,9 +74,17 @@ int main(int argc, char** argv) {
 
     // b. Initialize audio
     AudioCapture capture;
+    capture.setPreferredSource(config.audioSource);
     if (!capture.start()) {
         std::cerr << "Failed to start audio capture" << std::endl;
         return 1;
+    }
+    if (!capture.getActiveSource().empty() && capture.getActiveSource() != config.audioSource) {
+        config.audioSource = capture.getActiveSource();
+        Config::save(config, configPath);
+        try {
+            lastWriteTime = fs::last_write_time(configPath);
+        } catch (...) {}
     }
 
     // c. Initialize FFT
@@ -88,9 +97,11 @@ int main(int argc, char** argv) {
         return 1;
     }
     overlay.setConfig(config);
+    overlay.setTargetVisibility(config.overlayVisible);
 
     // e. Create BandMapper
     BandMapper mapper(colorModeFromString(config.colorMode));
+    mapper.setPartyMode(config.partyMode);
 
 #ifdef __linux__
     LinuxPlatform platform;
@@ -99,6 +110,7 @@ int main(int argc, char** argv) {
     Tray tray;
     tray.init("loopin-ambience-mode"); // Use icon name for system theme or path
     tray.syncConfig(config);
+    tray.setVisible(config.overlayVisible);
 
     Hotkey hotkey;
     // For hotkey we need native X11 handles if available
@@ -110,9 +122,11 @@ int main(int argc, char** argv) {
                   << " — hotkey disabled" << std::endl;
     }
 
-    bool overlayVisible = true;
+    bool overlayVisible = config.overlayVisible;
     auto toggleOverlay = [&]() {
         overlayVisible = !overlayVisible;
+        config.overlayVisible = overlayVisible;
+        Config::save(config, configPath);
         tray.setVisible(overlayVisible);
         overlay.setTargetVisibility(overlayVisible);
         std::cout << "[AMBIENCE] Overlay " << (overlayVisible ? "shown" : "hidden") << std::endl;
@@ -122,9 +136,13 @@ int main(int argc, char** argv) {
     tray.setOnQuit([&]() { running = false; });
     auto applyMenuConfig = [&]() {
         config = Config::load(configPath);
+        overlayVisible = config.overlayVisible;
         overlay.setConfig(config);
+        overlay.setTargetVisibility(overlayVisible);
         mapper.setColorMode(colorModeFromString(config.colorMode));
+        mapper.setPartyMode(config.partyMode);
         tray.syncConfig(config);
+        tray.setVisible(overlayVisible);
     };
     auto saveMenuConfig = [&]() {
         Config::save(config, configPath);
@@ -160,6 +178,24 @@ int main(int argc, char** argv) {
     });
     tray.setOnSurroundSync([&](bool enabled) {
         config.surroundSync = enabled;
+        saveMenuConfig();
+    });
+    tray.setOnPartyMode([&](bool enabled) {
+        config.partyMode = enabled;
+        saveMenuConfig();
+    });
+    tray.setOnAutostart([&](bool enabled) {
+        config.autostart = enabled;
+        try {
+            std::string execPath = fs::canonical(argv[0]).string();
+            if (enabled) {
+                AutoStart::enable(execPath);
+            } else {
+                AutoStart::disable();
+            }
+        } catch (...) {
+            std::cerr << "[AMBIENCE] Could not update auto-start" << std::endl;
+        }
         saveMenuConfig();
     });
     tray.setOnEdgeWidth([&](int width) {
@@ -204,7 +240,12 @@ int main(int argc, char** argv) {
                     }
 
                     overlay.setConfig(config);
+                    overlayVisible = config.overlayVisible;
+                    overlay.setTargetVisibility(overlayVisible);
                     mapper.setColorMode(colorModeFromString(config.colorMode));
+                    mapper.setPartyMode(config.partyMode);
+                    tray.syncConfig(config);
+                    tray.setVisible(overlayVisible);
 
                     // Handle autostart toggle on hot reload
                     std::string execPath = fs::canonical(argv[0]).string();

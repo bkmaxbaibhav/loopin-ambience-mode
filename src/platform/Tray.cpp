@@ -54,6 +54,8 @@ bool Tray::init(const std::string& iconPath) {
     visualBeatBloomItem_ = gtk_radio_menu_item_new_with_label(visualGroup, "Beat Bloom");
     visualGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(visualBeatBloomItem_));
     visualCornerHitsItem_ = gtk_radio_menu_item_new_with_label(visualGroup, "Corner Hits");
+    visualGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(visualCornerHitsItem_));
+    visualNeonRailsItem_ = gtk_radio_menu_item_new_with_label(visualGroup, "Neon Rails");
 
     GtkWidget* sideMenuItem = gtk_menu_item_new_with_label("Sides");
     GtkWidget* sideMenu = gtk_menu_new();
@@ -62,6 +64,8 @@ bool Tray::init(const std::string& iconPath) {
     sideBottomItem_ = gtk_check_menu_item_new_with_label("Bottom");
     sideLeftItem_ = gtk_check_menu_item_new_with_label("Left");
     surroundSyncItem_ = gtk_check_menu_item_new_with_label("Surround Sync");
+    partyModeItem_ = gtk_check_menu_item_new_with_label("Party Mode");
+    autostartItem_ = gtk_check_menu_item_new_with_label("Start on Login");
 
     GtkWidget* tuningMenuItem = gtk_menu_item_new_with_label("Manual Tuning");
     GtkWidget* tuningMenu = gtk_menu_new();
@@ -108,6 +112,7 @@ bool Tray::init(const std::string& iconPath) {
     g_object_set_data(G_OBJECT(visualSpectrumFlowItem_), "mode", (void*)"spectrum_flow");
     g_object_set_data(G_OBJECT(visualBeatBloomItem_), "mode", (void*)"beat_bloom");
     g_object_set_data(G_OBJECT(visualCornerHitsItem_), "mode", (void*)"corner_hits");
+    g_object_set_data(G_OBJECT(visualNeonRailsItem_), "mode", (void*)"neon_rails");
     g_object_set_data(G_OBJECT(sideTopItem_), "side", (void*)"top");
     g_object_set_data(G_OBJECT(sideRightItem_), "side", (void*)"right");
     g_object_set_data(G_OBJECT(sideBottomItem_), "side", (void*)"bottom");
@@ -144,11 +149,14 @@ bool Tray::init(const std::string& iconPath) {
     g_signal_connect(visualSpectrumFlowItem_, "toggled", G_CALLBACK(onVisualModeClicked), this);
     g_signal_connect(visualBeatBloomItem_, "toggled", G_CALLBACK(onVisualModeClicked), this);
     g_signal_connect(visualCornerHitsItem_, "toggled", G_CALLBACK(onVisualModeClicked), this);
+    g_signal_connect(visualNeonRailsItem_, "toggled", G_CALLBACK(onVisualModeClicked), this);
     g_signal_connect(sideTopItem_, "toggled", G_CALLBACK(onSideToggled), this);
     g_signal_connect(sideRightItem_, "toggled", G_CALLBACK(onSideToggled), this);
     g_signal_connect(sideBottomItem_, "toggled", G_CALLBACK(onSideToggled), this);
     g_signal_connect(sideLeftItem_, "toggled", G_CALLBACK(onSideToggled), this);
     g_signal_connect(surroundSyncItem_, "toggled", G_CALLBACK(onSurroundSyncToggled), this);
+    g_signal_connect(partyModeItem_, "toggled", G_CALLBACK(onPartyModeToggled), this);
+    g_signal_connect(autostartItem_, "toggled", G_CALLBACK(onAutostartToggled), this);
     g_signal_connect(widthSlimItem_, "toggled", G_CALLBACK(onWidthClicked), this);
     g_signal_connect(widthComfortItem_, "toggled", G_CALLBACK(onWidthClicked), this);
     g_signal_connect(widthWideItem_, "toggled", G_CALLBACK(onWidthClicked), this);
@@ -181,6 +189,7 @@ bool Tray::init(const std::string& iconPath) {
     gtk_menu_shell_append(GTK_MENU_SHELL(visualMenu), visualSpectrumFlowItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(visualMenu), visualBeatBloomItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(visualMenu), visualCornerHitsItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(visualMenu), visualNeonRailsItem_);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(visualMenuItem), visualMenu);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(sideMenu), sideTopItem_);
@@ -220,6 +229,8 @@ bool Tray::init(const std::string& iconPath) {
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), visualMenuItem);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), sideMenuItem);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), tuningMenuItem);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_), partyModeItem_);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_), autostartItem_);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator2);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_), quitItem);
 
@@ -263,6 +274,14 @@ void Tray::setOnSurroundSync(std::function<void(bool)> cb) {
     onSurroundSync_ = cb;
 }
 
+void Tray::setOnPartyMode(std::function<void(bool)> cb) {
+    onPartyMode_ = cb;
+}
+
+void Tray::setOnAutostart(std::function<void(bool)> cb) {
+    onAutostart_ = cb;
+}
+
 void Tray::setOnEdgeWidth(std::function<void(int)> cb) {
     onEdgeWidth_ = cb;
 }
@@ -293,11 +312,14 @@ void Tray::syncConfig(const AppConfig& config) {
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(visualSpectrumFlowItem_), config.visualMode == "spectrum_flow");
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(visualBeatBloomItem_), config.visualMode == "beat_bloom");
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(visualCornerHitsItem_), config.visualMode == "corner_hits");
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(visualNeonRailsItem_), config.visualMode == "neon_rails");
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(sideTopItem_), config.sideTop);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(sideRightItem_), config.sideRight);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(sideBottomItem_), config.sideBottom);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(sideLeftItem_), config.sideLeft);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(surroundSyncItem_), config.surroundSync);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(partyModeItem_), config.partyMode);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(autostartItem_), config.autostart);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widthSlimItem_), config.edgeWidth <= 13);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widthComfortItem_), config.edgeWidth > 13 && config.edgeWidth <= 23);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widthWideItem_), config.edgeWidth > 23 && config.edgeWidth <= 35);
@@ -360,6 +382,22 @@ void Tray::onSurroundSyncToggled(GtkCheckMenuItem* item, void* data) {
     if (self->syncing_) return;
     if (self->onSurroundSync_) {
         self->onSurroundSync_(gtk_check_menu_item_get_active(item));
+    }
+}
+
+void Tray::onPartyModeToggled(GtkCheckMenuItem* item, void* data) {
+    Tray* self = static_cast<Tray*>(data);
+    if (self->syncing_) return;
+    if (self->onPartyMode_) {
+        self->onPartyMode_(gtk_check_menu_item_get_active(item));
+    }
+}
+
+void Tray::onAutostartToggled(GtkCheckMenuItem* item, void* data) {
+    Tray* self = static_cast<Tray*>(data);
+    if (self->syncing_) return;
+    if (self->onAutostart_) {
+        self->onAutostart_(gtk_check_menu_item_get_active(item));
     }
 }
 

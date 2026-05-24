@@ -23,6 +23,8 @@ public:
     void setOnVisualMode(std::function<void(const std::string&)> cb);
     void setOnSideToggle(std::function<void(const std::string&, bool)> cb);
     void setOnSurroundSync(std::function<void(bool)> cb);
+    void setOnPartyMode(std::function<void(bool)> cb);
+    void setOnAutostart(std::function<void(bool)> cb);
     void setOnEdgeWidth(std::function<void(int)> cb);
     void setOnBrightness(std::function<void(float)> cb);
     void setOnContrast(std::function<void(float)> cb);
@@ -48,11 +50,14 @@ private:
     GtkWidget* visualSpectrumFlowItem_ = nullptr;
     GtkWidget* visualBeatBloomItem_ = nullptr;
     GtkWidget* visualCornerHitsItem_ = nullptr;
+    GtkWidget* visualNeonRailsItem_ = nullptr;
     GtkWidget* sideTopItem_ = nullptr;
     GtkWidget* sideRightItem_ = nullptr;
     GtkWidget* sideBottomItem_ = nullptr;
     GtkWidget* sideLeftItem_ = nullptr;
     GtkWidget* surroundSyncItem_ = nullptr;
+    GtkWidget* partyModeItem_ = nullptr;
+    GtkWidget* autostartItem_ = nullptr;
     GtkWidget* widthSlimItem_ = nullptr;
     GtkWidget* widthComfortItem_ = nullptr;
     GtkWidget* widthWideItem_ = nullptr;
@@ -71,6 +76,8 @@ private:
     std::function<void(const std::string&)> onVisualMode_;
     std::function<void(const std::string&, bool)> onSideToggle_;
     std::function<void(bool)> onSurroundSync_;
+    std::function<void(bool)> onPartyMode_;
+    std::function<void(bool)> onAutostart_;
     std::function<void(int)> onEdgeWidth_;
     std::function<void(float)> onBrightness_;
     std::function<void(float)> onContrast_;
@@ -84,6 +91,8 @@ private:
     static void onVisualModeClicked(GtkCheckMenuItem* item, void* data);
     static void onSideToggled(GtkCheckMenuItem* item, void* data);
     static void onSurroundSyncToggled(GtkCheckMenuItem* item, void* data);
+    static void onPartyModeToggled(GtkCheckMenuItem* item, void* data);
+    static void onAutostartToggled(GtkCheckMenuItem* item, void* data);
     static void onWidthClicked(GtkCheckMenuItem* item, void* data);
     static void onBrightnessClicked(GtkCheckMenuItem* item, void* data);
     static void onContrastClicked(GtkCheckMenuItem* item, void* data);

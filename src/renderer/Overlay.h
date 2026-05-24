@@ -42,6 +42,7 @@ private:
     int colorMode_ = 1;
     int visualMode_ = 0;
     int fpsCap_ = 60;
+    bool partyMode_ = false;
     bool glfwInitialized_ = false;
     std::chrono::microseconds frameTarget_{16667};
 };

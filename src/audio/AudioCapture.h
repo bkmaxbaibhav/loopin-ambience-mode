@@ -18,6 +18,8 @@ public:
     bool start();
     void stop();
     bool isRunning() const;
+    void setPreferredSource(const std::string& source);
+    std::string getActiveSource() const;
     std::vector<float> readSamples();
     float getLeftLevel() const;
     float getRightLevel() const;
@@ -33,12 +35,15 @@ private:
 #ifdef __linux__
     bool startPulseMonitor();
     std::string findPulseMonitorSource() const;
+    bool isSafePulseSourceName(const std::string& source) const;
 #endif
 
     std::atomic<bool> running_{ false };
     PaStream* stream_{ nullptr };
     bool paInitialized_ = false;
     FILE* pulsePipe_{ nullptr };
+    std::string preferredSource_;
+    std::string activeSource_;
     int channels_ = 2;
     std::thread simulationThread_;
     std::thread pulseThread_;

@@ -28,9 +28,11 @@ public:
                      float rightLevel = 0.0f,
                      bool surroundSync = false);
     void setColorMode(int mode) { colorMode_ = mode; }
+    void setPartyMode(bool enabled) { partyMode_ = enabled; }
 
 private:
     int colorMode_ = 1;
+    bool partyMode_ = false;
     int detectedGenre_ = 0;
     int candidateGenre_ = 0;
     float candidateHold_ = 0.0f;
