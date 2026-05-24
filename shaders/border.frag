@@ -53,10 +53,7 @@ void main() {
 
     float beat = clamp(uBeat, 0.0, 1.0);
     float party = uPartyMode == 1 ? 1.0 : 0.0;
-    int mode = uVisualMode;
-    if (mode == 0) {
-        mode = beat > mix(0.82, 0.58, party) ? 3 : 1;
-    }
+    int mode = uVisualMode == 0 ? 1 : uVisualMode;
 
     float genreMix = clamp(uGenreConfidence, 0.0, 0.8);
     float comfort = mode == 1 ? 1.0 : 0.0;

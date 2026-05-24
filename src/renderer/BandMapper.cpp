@@ -95,6 +95,34 @@ VisualParams BandMapper::map(float bass,
     beatPulse_ = std::max(beatHit, beatPulse_ * (partyMode_ ? 0.80f : 0.93f));
     params.beatPulse = isSilent ? 0.0f : beatPulse_;
 
+    float broadEnergy = std::clamp(
+        params.bassIntensity * 0.55f +
+        params.midIntensity * 0.24f +
+        params.trebleIntensity * 0.21f,
+        0.0f,
+        1.0f
+    );
+    float transient = std::clamp(bassLift * (partyMode_ ? 18.0f : 10.0f), 0.0f, 1.0f);
+    float dropHit = std::clamp(transient * 0.62f + beatPulse_ * 0.28f + broadEnergy * 0.26f, 0.0f, 1.0f);
+    dropEnergy_ = std::max(dropHit, dropEnergy_ * (partyMode_ ? 0.90f : 0.955f));
+
+    float dropThreshold = partyMode_ ? 0.54f : 0.66f;
+    float railThreshold = partyMode_ ? 0.74f : 0.84f;
+    if (!isSilent && dropEnergy_ > railThreshold) {
+        autoVisualMode_ = 5; // Neon Rails for very strong drops.
+        dropHold_ = partyMode_ ? 2.2f : 1.6f;
+    } else if (!isSilent && dropEnergy_ > dropThreshold) {
+        autoVisualMode_ = 3; // Beat Bloom for EDM-style lift/drop.
+        dropHold_ = partyMode_ ? 1.8f : 1.2f;
+    } else if (!isSilent && broadEnergy > 0.42f && params.trebleIntensity > params.bassIntensity * 0.72f) {
+        autoVisualMode_ = 2; // Spectrum Flow for brighter/high-energy sections.
+        dropHold_ = std::max(dropHold_, partyMode_ ? 1.4f : 0.9f);
+    } else if (dropHold_ > 0.0f) {
+        dropHold_ -= 1.0f / 60.0f;
+    } else {
+        autoVisualMode_ = 1; // Soft Aura remains the default.
+    }
+
     avgBass_ = 0.992f * avgBass_ + 0.008f * bass;
     avgMid_ = 0.992f * avgMid_ + 0.008f * mid;
     avgTreble_ = 0.992f * avgTreble_ + 0.008f * treble;
@@ -154,6 +182,7 @@ VisualParams BandMapper::map(float bass,
     params.genrePresence = genre.presence;
     params.genreConfidence = genreConfidence_;
     params.colorMode = colorMode_;
+    params.autoVisualMode = autoVisualMode_;
 
     return params;
 }

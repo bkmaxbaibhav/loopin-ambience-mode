@@ -157,7 +157,8 @@ void Overlay::render(const VisualParams& params) {
     shader_.setFloat("uGenreConfidence", params.genreConfidence);
 
     shader_.setInt("uColorMode", params.colorMode);
-    shader_.setInt("uVisualMode", visualMode_);
+    int effectiveVisualMode = visualMode_ == 0 ? params.autoVisualMode : visualMode_;
+    shader_.setInt("uVisualMode", effectiveVisualMode);
     shader_.setInt("uSideMask", sideMask_);
     shader_.setInt("uPartyMode", partyMode_ ? 1 : 0);
     shader_.setFloat("uHue", params.hue);

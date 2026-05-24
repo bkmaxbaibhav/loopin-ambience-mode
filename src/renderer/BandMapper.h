@@ -14,6 +14,7 @@ struct VisualParams {
     float genreConfidence = 0.0f;
     float hue             = 0.0f;  // → reactive color hue
     int   colorMode       = 0;     // 0=static 1=reactive 2=spectrum 3=auto
+    int   autoVisualMode  = 1;     // shader visual mode chosen only when config visual_mode=auto
     bool  isSilent        = true;
 };
 
@@ -43,4 +44,7 @@ private:
     float avgMid_ = 0.0f;
     float avgTreble_ = 0.0f;
     float beatPulse_ = 0.0f;
+    float dropEnergy_ = 0.0f;
+    float dropHold_ = 0.0f;
+    int autoVisualMode_ = 1;
 };
