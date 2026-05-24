@@ -147,16 +147,19 @@ void main() {
 
     if (mode == 5) {
         float railFeather = 0.035;
+        // Left side: use (1 - vUV.y) so the head travels downward (top→bottom).
+        // Right side: use vUV.y so it travels upward for visual symmetry.
         float railPosition = isBottom ? vUV.x
                            : isTop    ? vUV.x
-                           : isLeft   ? vUV.y
+                           : isLeft   ? (1.0 - vUV.y)
                            :            vUV.y;
 
         float topRail = segmentBand(vUV.x, 0.16, 0.58, railFeather) +
                         segmentBand(vUV.x, 0.70, 0.86, railFeather);
         float bottomRail = segmentBand(vUV.x, 0.16, 0.66, railFeather);
-        float leftRail = segmentBand(vUV.y, 0.16, 0.38, railFeather) +
-                         segmentBand(vUV.y, 0.74, 0.88, railFeather);
+        // Left rail segments mapped to (1 - vUV.y) space → same visual bands
+        float leftRail = segmentBand(1.0 - vUV.y, 0.16, 0.38, railFeather) +
+                         segmentBand(1.0 - vUV.y, 0.74, 0.88, railFeather);
         float rightRail = segmentBand(vUV.y, 0.16, 0.84, railFeather);
 
         segmentMask = isBottom ? bottomRail
@@ -171,7 +174,9 @@ void main() {
         float rightTopCorner = exp(-length(vec2(distRight, distTop)) / max(uEdgeWidth * 0.78, 1.0));
         segmentMask = max(segmentMask, max(max(leftBottomCorner, rightBottomCorner), max(leftTopCorner, rightTopCorner)) * 0.82);
 
-        float movingHead = fract(uTime * (0.13 + party * 0.12) + beat * 0.12);
+        // Speed scales with beat intensity — fast beat = fast movement, no position jump.
+        float headSpeed = (0.13 + party * 0.12) * (1.0 + beat * 2.8);
+        float movingHead = fract(uTime * headSpeed);
         float headA = exp(-pow(abs(railPosition - movingHead) / 0.045, 2.0));
         float headB = exp(-pow(abs(railPosition - fract(movingHead + 0.52)) / 0.06, 2.0));
         railHotspot = (headA + headB * 0.58) * segmentMask;
@@ -242,9 +247,9 @@ void main() {
     }
 
     if (mode == 5) {
-        vec3 railBlue = vec3(0.32, 0.42, 1.0);
-        vec3 railWhite = vec3(0.92, 0.96, 1.0);
-        finalColor = mix(mix(finalColor, railBlue, 0.68), railWhite, clamp(core * 0.72 + railHotspot * 0.5, 0.0, 0.82));
+        // Preserve the user's color mode — just add a bright white flash on the hotspot core.
+        vec3 hotspotFlash = vec3(0.95, 0.97, 1.0);
+        finalColor = mix(finalColor, hotspotFlash, clamp(railHotspot * 0.55 + core * 0.35, 0.0, 0.72));
     }
 
     finalGlow *= cornerBoost;

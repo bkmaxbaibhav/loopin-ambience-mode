@@ -108,19 +108,35 @@ VisualParams BandMapper::map(float bass,
 
     float dropThreshold = partyMode_ ? 0.54f : 0.66f;
     float railThreshold = partyMode_ ? 0.74f : 0.84f;
+
+    // Decrement hold timer every frame regardless of current energy.
+    // This ensures the timer always counts down and modes can transition.
+    if (dropHold_ > 0.0f) {
+        dropHold_ -= 1.0f / 60.0f;
+        if (dropHold_ < 0.0f) dropHold_ = 0.0f;
+    }
+
     if (!isSilent && dropEnergy_ > railThreshold) {
-        autoVisualMode_ = 5; // Neon Rails for very strong drops.
+        // Neon Rails for very strong drops — always override hold.
+        autoVisualMode_ = 5;
         dropHold_ = partyMode_ ? 2.2f : 1.6f;
     } else if (!isSilent && dropEnergy_ > dropThreshold) {
-        autoVisualMode_ = 3; // Beat Bloom for EDM-style lift/drop.
-        dropHold_ = partyMode_ ? 1.8f : 1.2f;
+        // Beat Bloom for EDM-style lift/drop — only upgrade, don't extend mode 5.
+        if (autoVisualMode_ != 5) {
+            autoVisualMode_ = 3;
+        }
+        if (dropHold_ < (partyMode_ ? 1.8f : 1.2f)) {
+            dropHold_ = partyMode_ ? 1.8f : 1.2f;
+        }
     } else if (!isSilent && broadEnergy > 0.42f && params.trebleIntensity > params.bassIntensity * 0.72f) {
-        autoVisualMode_ = 2; // Spectrum Flow for brighter/high-energy sections.
-        dropHold_ = std::max(dropHold_, partyMode_ ? 1.4f : 0.9f);
-    } else if (dropHold_ > 0.0f) {
-        dropHold_ -= 1.0f / 60.0f;
-    } else {
-        autoVisualMode_ = 1; // Soft Aura remains the default.
+        // Spectrum Flow for brighter/high-energy sections — only set if no higher mode is held.
+        if (autoVisualMode_ != 5 && autoVisualMode_ != 3) {
+            autoVisualMode_ = 2;
+        }
+        // Do NOT reset dropHold_ here — let the existing hold run out naturally.
+    } else if (dropHold_ <= 0.0f) {
+        // Hold expired and no energy trigger — fall back to Soft Aura.
+        autoVisualMode_ = 1;
     }
 
     avgBass_ = 0.992f * avgBass_ + 0.008f * bass;
