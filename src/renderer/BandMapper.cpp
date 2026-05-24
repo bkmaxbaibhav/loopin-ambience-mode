@@ -117,12 +117,12 @@ VisualParams BandMapper::map(float bass,
     }
 
     if (!isSilent && dropEnergy_ > railThreshold) {
-        // Neon Rails for very strong drops — always override hold.
-        autoVisualMode_ = 5;
+        // Corner Hits for very strong drops (mode 5 is ambient-only, not music-reactive)
+        autoVisualMode_ = 4;
         dropHold_ = partyMode_ ? 2.2f : 1.6f;
     } else if (!isSilent && dropEnergy_ > dropThreshold) {
-        // Beat Bloom for EDM-style lift/drop — only upgrade, don't extend mode 5.
-        if (autoVisualMode_ != 5) {
+        // Beat Bloom for EDM-style lift/drop
+        if (autoVisualMode_ != 4) {
             autoVisualMode_ = 3;
         }
         if (dropHold_ < (partyMode_ ? 1.8f : 1.2f)) {
@@ -130,7 +130,7 @@ VisualParams BandMapper::map(float bass,
         }
     } else if (!isSilent && broadEnergy > 0.42f && params.trebleIntensity > params.bassIntensity * 0.72f) {
         // Spectrum Flow for brighter/high-energy sections — only set if no higher mode is held.
-        if (autoVisualMode_ != 5 && autoVisualMode_ != 3) {
+        if (autoVisualMode_ != 4 && autoVisualMode_ != 3) {
             autoVisualMode_ = 2;
         }
         // Do NOT reset dropHold_ here — let the existing hold run out naturally.

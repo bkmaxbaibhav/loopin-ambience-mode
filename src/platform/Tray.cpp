@@ -14,11 +14,16 @@ bool Tray::init(const std::string& iconPath) {
         return false;
     }
 
+    // app_indicator_new is deprecated in newer libayatana-appindicator3 headers,
+    // but no non-deprecated C constructor exists — suppress the warning cleanly.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     indicator_ = app_indicator_new(
         "loopin-ambience-mode",
         iconPath.c_str(),
         APP_INDICATOR_CATEGORY_APPLICATION_STATUS
     );
+#pragma GCC diagnostic pop
 
     app_indicator_set_status(indicator_, APP_INDICATOR_STATUS_ACTIVE);
 
