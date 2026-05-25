@@ -47,4 +47,5 @@ private:
     float dropEnergy_ = 0.0f;
     float dropHold_ = 0.0f;
     int autoVisualMode_ = 1;
+    float peakVolume_ = 0.01f;
 };

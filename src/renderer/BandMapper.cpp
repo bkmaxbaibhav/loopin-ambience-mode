@@ -71,12 +71,32 @@ VisualParams BandMapper::map(float bass,
         return std::clamp(std::pow(std::max(0.0f, value * gain), 0.62f), 0.0f, 1.0f);
     };
 
-    // PortAudio/Pulse monitor FFT values are small in normal desktop playback,
-    // so compress the range before sending it to the visual layer.
-    float partyGain = partyMode_ ? 1.65f : 1.0f;
-    params.bassIntensity   = liftBand(bass,   10.0f * partyGain); // bottom edge
-    params.midIntensity    = liftBand(mid,    24.0f * partyGain); // side edges
-    params.trebleIntensity = liftBand(treble, 80.0f * partyGain); // top edge
+    // 1. Automatic Gain Control (AGC) to handle varying desktop audio output levels
+    float currentPeak = std::max({bass, mid, treble});
+    if (!isSilent && currentPeak > 0.00001f) {
+        if (currentPeak > peakVolume_) {
+            // Rapid attack for loud sounds/spikes
+            peakVolume_ = 0.82f * peakVolume_ + 0.18f * currentPeak;
+        } else {
+            // Very slow decay to hold the gain stable through brief pauses/breaks
+            peakVolume_ = 0.9985f * peakVolume_ + 0.0015f * currentPeak;
+        }
+    }
+    // Safe clamp for peakVolume_ to avoid division-by-zero or over-amplification of noise floor
+    peakVolume_ = std::clamp(peakVolume_, 0.0004f, 1.0f);
+
+    float targetPeak = 0.006f; // Target peak amplitude for normal dynamic range
+    float agcGain = targetPeak / peakVolume_;
+    agcGain = std::clamp(agcGain, 1.0f, 16.0f); // Scale gain dynamically between 1x and 16x boost
+
+    float adjustedBass = bass * agcGain;
+    float adjustedMid = mid * agcGain;
+    float adjustedTreble = treble * agcGain;
+
+    float partyGain = partyMode_ ? 1.65f : 1.15f;
+    params.bassIntensity   = liftBand(adjustedBass,   10.0f * partyGain); // bottom edge
+    params.midIntensity    = liftBand(adjustedMid,    24.0f * partyGain); // side edges
+    params.trebleIntensity = liftBand(adjustedTreble, 80.0f * partyGain); // top edge
     params.leftIntensity = params.midIntensity;
     params.rightIntensity = params.midIntensity;
 
