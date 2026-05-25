@@ -11,3 +11,16 @@ CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+
+# CPack / packaging output
+_CPack_Packages/
+*.deb
+*.rpm
+*.tar.gz
+*.tar.bz2
+*.zip
+
+# Patch and backup files
+*.patch
+*.orig
+*.rej
