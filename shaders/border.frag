@@ -26,7 +26,13 @@ vec3 hsv2rgb(float h, float s, float v) {
     vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
     vec3 p = abs(fract(vec3(h) + K.xyz) * 6.0 - K.www);
     return v * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), s);
+}// Simple pseudo-random 2D noise function for visual effects
+float noise(vec2 p) {
+    // Based on classic GLSL noise hack
+    vec3 x = vec3(p, 0.0);
+    return fract(sin(dot(x, vec3(12.9898,78.233, 37.719))) * 43758.5453);
 }
+
 
 float segmentBand(float x, float start, float end, float feather) {
     return smoothstep(start, start + feather, x) *
@@ -219,6 +225,7 @@ void main() {
                           + uTime * (0.012 + party * 0.028)
                           + finalEdgeIntensity * (0.10 + party * 0.08)
                           + beat * (0.055 + party * 0.045);
+        if (mode == 4) paletteFlow += sin(uTime * 0.5) * 0.2;
         float warmShift = (uGenreWarmth - 1.0) * 0.018 * genreMix;
         float presenceShift = (uGenrePresence - 1.0) * 0.035 * genreMix;
         float autoHue = fract(uHue * 0.42 + paletteFlow + presenceShift - warmShift);

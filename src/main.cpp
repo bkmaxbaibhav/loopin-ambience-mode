@@ -298,11 +298,15 @@ int main(int argc, char** argv) {
         if (config.debugMode) {
             auto debugNow = std::chrono::steady_clock::now();
             if (std::chrono::duration_cast<std::chrono::milliseconds>(debugNow - lastDebugTime).count() >= 500) {
+                // Map auto visual mode int to name for debug
+                const char* vfxNames[] = {"auto", "soft_aura", "spectrum_flow", "beat_bloom", "corner_hits", "neon_rails"};
+                int vfxIdx = std::clamp(params.autoVisualMode, 0, 5);
                 std::cout << "[AMBIENCE] bass=" << fft.getBass()
                           << " mid=" << fft.getMid()
                           << " treble=" << fft.getTreble()
                           << " beat=" << params.beatPulse
                           << " genre_conf=" << params.genreConfidence
+                          << " auto_vfx=" << vfxNames[vfxIdx]
                           << " left=" << capture.getLeftLevel()
                           << " right=" << capture.getRightLevel()
                           << " silent=" << (fft.isSilent() ? "true" : "false")
