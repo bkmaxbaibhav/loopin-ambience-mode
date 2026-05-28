@@ -151,6 +151,9 @@ bool LinuxPlatform::initX11(void* windowHandle) {
 void LinuxPlatform::makeClickThrough() {
     if (displayServer_ != DisplayServer::X11) return;
 
+    // Unmap the window first so that the transition to override_redirect takes effect on mapping.
+    XUnmapWindow(xDisplay_, xWindow_);
+
     XSetWindowAttributes attrs;
     attrs.override_redirect = True;
     XChangeWindowAttributes(xDisplay_, xWindow_, CWOverrideRedirect, &attrs);
@@ -175,6 +178,8 @@ void LinuxPlatform::makeClickThrough() {
         XFixesDestroyRegion(xDisplay_, region);
     }
 
+    // Map the window again so the window manager (e.g. GNOME Mutter) sees it as override_redirect.
+    XMapWindow(xDisplay_, xWindow_);
     XFlush(xDisplay_);
 }
 

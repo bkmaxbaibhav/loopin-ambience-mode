@@ -30,17 +30,56 @@ vec3 hsv2rgb(float h, float s, float v) {
     vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
     vec3 p = abs(fract(vec3(h) + K.xyz) * 6.0 - K.www);
     return v * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), s);
-}// Simple pseudo-random 2D noise function for visual effects
+}
+
+// Simple pseudo-random 2D noise function for visual effects
 float noise(vec2 p) {
     // Based on classic GLSL noise hack
     vec3 x = vec3(p, 0.0);
     return fract(sin(dot(x, vec3(12.9898,78.233, 37.719))) * 43758.5453);
 }
 
+float hash(uint n) {
+    n = (n ^ 61u) ^ (n >> 16u);
+    n *= 186u;
+    n = n ^ (n >> 4u);
+    n *= 2246822519u;
+    n = n ^ (n >> 15u);
+    return float(n) / 4294967296.0;
+}
 
-float segmentBand(float x, float start, float end, float feather) {
-    return smoothstep(start, start + feather, x) *
-           (1.0 - smoothstep(end - feather, end, x));
+// ---------- color mode -------------------------------------------------------
+
+vec3 computeColor(float edgePos, float edgeIntens, float beat, float party, float genreMix) {
+    int mode = uVisualMode == 0 ? 1 : uVisualMode;
+    if (uColorMode == 0) {
+        // Static Mode
+        return uPrimaryColor;
+    } else if (uColorMode == 1) {
+        // Reactive Hue Mode
+        return hsv2rgb(uHue, 0.72 + beat * (0.12 + party * 0.10), 1.0);
+    } else if (uColorMode == 3) {
+        // Auto Colors: comfort palette biased by genre and edge position.
+        float flow = edgePos * (0.34 + party * 0.12)
+                   + uTime * (0.012 + party * 0.028)
+                   + edgeIntens * (0.10 + party * 0.08)
+                   + beat * (0.055 + party * 0.045);
+        if (mode == 4) flow += sin(uTime * 0.5) * 0.2;
+        float wShift = (uGenreWarmth   - 1.0) * 0.018 * genreMix;
+        float pShift = (uGenrePresence - 1.0) * 0.035 * genreMix;
+        float h = fract(uHue * 0.42 + flow + pShift - wShift);
+        float s = clamp(mix(0.60 + party * 0.12, 0.84 + party * 0.12, beat)
+                      * mix(1.0, 0.98 + uGenrePresence * 0.03, genreMix), 0.0, 1.0);
+        return hsv2rgb(h, s, 1.0);
+    } else {
+        // Spectrum Rainbow Mode (Ticket 3)
+        float spd = (mode == 1 ? 0.018 : 0.055 + beat * 0.04) * mix(1.0, uGenrePresence, genreMix * 0.18);
+        float h   = fract(edgePos * 0.72 + uTime * spd + edgeIntens * 0.12 + beat * 0.025);
+        h = fract(h - (uGenreWarmth - 1.0) * 0.025 * genreMix);
+        float s = clamp(mix(0.62 + party * 0.10, 0.82 + party * 0.14, beat)
+                      * mix(1.0, 0.93 + uGenrePresence * 0.05, genreMix), 0.0, 1.0);
+        return hsv2rgb(h, s, 1.0);
+    }
 }
 
 // ---------- perimeter parameterisation helper --------------------------------
@@ -233,46 +272,56 @@ void main() {
         finalColor = mix(finalColor, laserColor, clamp(laserGlow * 0.85, 0.0, 1.0));
     }
 
-    vec3 finalColor;
-    if (uColorMode == 0) {
-        // Static Mode
-        finalColor = uPrimaryColor;
-    } else if (uColorMode == 1) {
-        // Reactive Hue Mode
-        finalColor = hsv2rgb(uHue, 0.72 + beat * (0.12 + party * 0.10), 1.0);
-    } else if (uColorMode == 3) {
-        // Auto Colors: comfort palette biased by genre and edge position.
-        float edgePosition;
-        if (isBottom) edgePosition = vUV.x;
-        else if (isTop) edgePosition = vUV.x;
-        else if (isLeft) edgePosition = vUV.y;
-        else edgePosition = vUV.y;
+    // ==========================================================================
+    // MODE 6: Firefly Drift
+    // Soft slow-moving glowing orbs that float along the border in both
+    // directions. Each orb breathes at its own rate. Beat multiplies brightness.
+    // Gentle fairy-light / festival string feel.
+    // ==========================================================================
+    if (mode == 6) {
+        float W     = uResolution.x;
+        float H     = uResolution.y;
+        float perim = 2.0 * (W + H);
 
-        float paletteFlow = edgePosition * (0.34 + party * 0.12)
-                          + uTime * (0.012 + party * 0.028)
-                          + finalEdgeIntensity * (0.10 + party * 0.08)
-                          + beat * (0.055 + party * 0.045);
-        if (mode == 4) paletteFlow += sin(uTime * 0.5) * 0.2;
-        float warmShift = (uGenreWarmth - 1.0) * 0.018 * genreMix;
-        float presenceShift = (uGenrePresence - 1.0) * 0.035 * genreMix;
-        float autoHue = fract(uHue * 0.42 + paletteFlow + presenceShift - warmShift);
-        float saturation = clamp(mix(0.60 + party * 0.12, 0.84 + party * 0.12, beat) * mix(1.0, 0.98 + uGenrePresence * 0.03, genreMix), 0.0, 1.0);
-        finalColor = hsv2rgb(autoHue, saturation, 1.0);
-    } else {
-        // Spectrum Rainbow Mode (Ticket 3)
-        // edgePosition calculation (from Session 4b)
-        float edgePosition;
-        if (isBottom) edgePosition = vUV.x;
-        else if (isTop) edgePosition = vUV.x;
-        else if (isLeft) edgePosition = vUV.y;
-        else edgePosition = vUV.y;
+        float fragT = perimT(isBottom, isRight, isTop, isLeft, vUV);
 
-        float hueSpeed = (mode == 1 ? 0.018 : 0.055 + beat * 0.04) * mix(1.0, uGenrePresence, genreMix * 0.18);
-        float spectrumHue = fract(edgePosition * 0.72 + uTime * hueSpeed + finalEdgeIntensity * 0.12 + beat * 0.025);
-        float warmShift = (uGenreWarmth - 1.0) * 0.025 * genreMix;
-        spectrumHue = fract(spectrumHue - warmShift);
-        float saturation = clamp(mix(0.62 + party * 0.10, 0.82 + party * 0.14, beat) * mix(1.0, 0.93 + uGenrePresence * 0.05, genreMix), 0.0, 1.0);
-        finalColor = hsv2rgb(spectrumHue, saturation, 1.0);
+        float laserGlow  = 0.0;
+        vec3  laserColor = finalColor;
+
+        int N = 18 + int(party * 10.0);
+        for (int i = 0; i < N; i++) {
+            uint  seed   = uint(i) * 3571u + 6197u;
+            float rndPos = hash(seed);
+            float rndSpd = hash(seed + 1u) * 0.012 + 0.005;
+            float rndHue = hash(seed + 2u);
+            float rndSz  = hash(seed + 3u) * 0.5 + 0.6;
+            float rndDir = hash(seed + 4u) > 0.5 ? 1.0 : -1.0;
+
+            float ballT = fract(rndPos + rndDir * rndSpd * uTime);
+
+            float dt   = abs(fragT - ballT);
+            dt = min(dt, 1.0 - dt);
+            float dtPx = dt * perim;
+
+            float ballR   = max(uEdgeWidth * 0.55, 7.0) * rndSz;
+            float contrib = exp(-dtPx * dtPx / (ballR * ballR * 0.6));
+
+            float breathPhase = hash(seed + 5u) * 6.28;
+            float breath = 0.65 + 0.35 * sin(uTime * (0.8 + hash(seed + 6u) * 0.6) + breathPhase);
+            float bright = breath * (0.6 + beat * 0.35 + party * 0.2);
+
+            laserGlow += contrib * bright;
+
+            vec3 flyCol = hsv2rgb(fract(uHue + rndHue * 0.5), 0.78, 1.0);
+            laserColor  = mix(laserColor, flyCol, clamp(contrib * bright, 0.0, 1.0));
+        }
+
+        laserColor = mix(laserColor, vec3(1.0), clamp(laserGlow * 0.3, 0.0, 0.6));
+        laserGlow  = clamp(laserGlow, 0.0, 2.2);
+
+        finalGlow  *= 0.35;
+        finalGlow  += laserGlow * uIntensity * (0.75 + party * 0.35);
+        finalColor  = mix(finalColor, laserColor, clamp(laserGlow * 0.65, 0.0, 1.0));
     }
 
     // ==========================================================================

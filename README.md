@@ -38,9 +38,10 @@ sudo rpm -ivh https://github.com/baibhavkumar/loopin-ambience-mode/releases/late
 
 ## Installing Dependencies
 
-### Linux (Ubuntu/Debian)
+### Linux (Ubuntu/Debian/Parrot OS)
 ```bash
 sudo apt-get update
+# Note: On newer releases, libayatana-appindicator3-dev is preferred to avoid packaging conflicts
 sudo apt-get install -y \
   build-essential \
   cmake \
@@ -50,7 +51,7 @@ sudo apt-get install -y \
   libglfw3-dev \
   libgl1-mesa-dev \
   nlohmann-json3-dev \
-  libappindicator3-dev \
+  libayatana-appindicator3-dev \
   libwayland-dev \
   wayland-protocols \
   libx11-dev \
