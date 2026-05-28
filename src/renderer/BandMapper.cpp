@@ -71,12 +71,32 @@ VisualParams BandMapper::map(float bass,
         return std::clamp(std::pow(std::max(0.0f, value * gain), 0.62f), 0.0f, 1.0f);
     };
 
-    // PortAudio/Pulse monitor FFT values are small in normal desktop playback,
-    // so compress the range before sending it to the visual layer.
-    float partyGain = partyMode_ ? 1.65f : 1.0f;
-    params.bassIntensity   = liftBand(bass,   10.0f * partyGain); // bottom edge
-    params.midIntensity    = liftBand(mid,    24.0f * partyGain); // side edges
-    params.trebleIntensity = liftBand(treble, 80.0f * partyGain); // top edge
+    // 1. Automatic Gain Control (AGC) to handle varying desktop audio output levels
+    float currentPeak = std::max({bass, mid, treble});
+    if (!isSilent && currentPeak > 0.00001f) {
+        if (currentPeak > peakVolume_) {
+            // Rapid attack for loud sounds/spikes
+            peakVolume_ = 0.82f * peakVolume_ + 0.18f * currentPeak;
+        } else {
+            // Very slow decay to hold the gain stable through brief pauses/breaks
+            peakVolume_ = 0.9985f * peakVolume_ + 0.0015f * currentPeak;
+        }
+    }
+    // Safe clamp for peakVolume_ to avoid division-by-zero or over-amplification of noise floor
+    peakVolume_ = std::clamp(peakVolume_, 0.0004f, 1.0f);
+
+    float targetPeak = 0.006f; // Target peak amplitude for normal dynamic range
+    float agcGain = targetPeak / peakVolume_;
+    agcGain = std::clamp(agcGain, 1.0f, 16.0f); // Scale gain dynamically between 1x and 16x boost
+
+    float adjustedBass = bass * agcGain;
+    float adjustedMid = mid * agcGain;
+    float adjustedTreble = treble * agcGain;
+
+    float partyGain = partyMode_ ? 1.65f : 1.15f;
+    params.bassIntensity   = liftBand(adjustedBass,   10.0f * partyGain); // bottom edge
+    params.midIntensity    = liftBand(adjustedMid,    24.0f * partyGain); // side edges
+    params.trebleIntensity = liftBand(adjustedTreble, 80.0f * partyGain); // top edge
     params.leftIntensity = params.midIntensity;
     params.rightIntensity = params.midIntensity;
 
@@ -106,37 +126,77 @@ VisualParams BandMapper::map(float bass,
     float dropHit = std::clamp(transient * 0.62f + beatPulse_ * 0.28f + broadEnergy * 0.26f, 0.0f, 1.0f);
     dropEnergy_ = std::max(dropHit, dropEnergy_ * (partyMode_ ? 0.90f : 0.955f));
 
-    float dropThreshold = partyMode_ ? 0.54f : 0.66f;
-    float railThreshold = partyMode_ ? 0.74f : 0.84f;
+    // --- Dynamic Auto VFX Switching ---
+    // Thresholds tuned for real desktop audio levels (post-AGC).
+    // The goal: constantly shifting visuals that feel alive and festive.
+    float dropThreshold   = partyMode_ ? 0.32f : 0.42f;
+    float railThreshold   = partyMode_ ? 0.52f : 0.62f;
+    float cornerThreshold = partyMode_ ? 0.38f : 0.48f;
 
-    // Decrement hold timer every frame regardless of current energy.
-    // This ensures the timer always counts down and modes can transition.
-    if (dropHold_ > 0.0f) {
-        dropHold_ -= 1.0f / 60.0f;
-        if (dropHold_ < 0.0f) dropHold_ = 0.0f;
+    // Track sustained energy shifts for mode decisions
+    float trebleDominance = params.trebleIntensity / (params.bassIntensity + params.midIntensity + 0.001f);
+    float bassDominance   = params.bassIntensity / (params.midIntensity + params.trebleIntensity + 0.001f);
+
+    int newMode = autoVisualMode_;
+
+    if (!isSilent) {
+        if (dropEnergy_ > railThreshold && bassDominance > 0.6f) {
+            // Neon Rails: heavy bass drops, EDM/trap crescendos
+            newMode = 5;
+            dropHold_ = partyMode_ ? 2.5f : 1.8f;
+        } else if (dropEnergy_ > cornerThreshold && trebleDominance > 0.45f) {
+            // Corner Hits: punchy beats with bright treble shimmer (rock, pop hooks)
+            newMode = 4;
+            dropHold_ = partyMode_ ? 2.0f : 1.4f;
+        } else if (dropEnergy_ > dropThreshold) {
+            // Beat Bloom: general strong beats, dance energy
+            newMode = 3;
+            dropHold_ = partyMode_ ? 1.8f : 1.2f;
+        } else if (broadEnergy > 0.28f && trebleDominance > 0.35f) {
+            // Spectrum Flow: bright, shimmery passages (classical highs, synth leads)
+            newMode = 2;
+            dropHold_ = std::max(dropHold_, partyMode_ ? 1.2f : 0.8f);
+        } else if (broadEnergy > 0.15f && bassDominance < 0.5f) {
+            // Soft Aura: calm, balanced audio — ambient, lo-fi, quiet vocals
+            newMode = 1;
+            if (dropHold_ <= 0.0f) dropHold_ = 0.0f;
+        }
+
+        // Genre-biased mode nudges (when genre confidence is high enough)
+        if (genreConfidence_ > 0.5f && dropHold_ <= 0.0f) {
+            // EDM/House → prefer Beat Bloom and Neon Rails
+            if (detectedGenre_ == 1 || detectedGenre_ == 6) {
+                if (broadEnergy > 0.20f) newMode = (dropEnergy_ > 0.3f) ? 3 : 5;
+            }
+            // Classical/Jazz/Acoustic → prefer Soft Aura and Spectrum Flow
+            else if (detectedGenre_ == 4 || detectedGenre_ == 5 || detectedGenre_ == 7) {
+                newMode = (trebleDominance > 0.4f) ? 2 : 1;
+            }
+            // Rock → prefer Corner Hits
+            else if (detectedGenre_ == 3) {
+                if (broadEnergy > 0.25f) newMode = 4;
+            }
+            // Pop → cycle more freely
+            else if (detectedGenre_ == 8) {
+                if (dropEnergy_ > 0.35f) newMode = 3;
+                else if (trebleDominance > 0.4f) newMode = 2;
+            }
+        }
+
+        // Apply the mode change (with hold protection to prevent flickering)
+        if (newMode != autoVisualMode_ && dropHold_ <= 0.0f) {
+            autoVisualMode_ = newMode;
+        } else if (newMode != autoVisualMode_ && dropHold_ > 0.0f) {
+            // Strong enough energy overrides the hold
+            if (dropEnergy_ > railThreshold || dropEnergy_ > cornerThreshold) {
+                autoVisualMode_ = newMode;
+            }
+        }
     }
 
-    if (!isSilent && dropEnergy_ > railThreshold) {
-        // Corner Hits for very strong drops (mode 5 is ambient-only, not music-reactive)
-        autoVisualMode_ = 4;
-        dropHold_ = partyMode_ ? 2.2f : 1.6f;
-    } else if (!isSilent && dropEnergy_ > dropThreshold) {
-        // Beat Bloom for EDM-style lift/drop
-        if (autoVisualMode_ != 4) {
-            autoVisualMode_ = 3;
-        }
-        if (dropHold_ < (partyMode_ ? 1.8f : 1.2f)) {
-            dropHold_ = partyMode_ ? 1.8f : 1.2f;
-        }
-    } else if (!isSilent && broadEnergy > 0.42f && params.trebleIntensity > params.bassIntensity * 0.72f) {
-        // Spectrum Flow for brighter/high-energy sections — only set if no higher mode is held.
-        if (autoVisualMode_ != 4 && autoVisualMode_ != 3) {
-            autoVisualMode_ = 2;
-        }
-        // Do NOT reset dropHold_ here — let the existing hold run out naturally.
-    } else if (dropHold_ <= 0.0f) {
-        // Hold expired and no energy trigger — fall back to Soft Aura.
-        autoVisualMode_ = 1;
+    // Decay the hold timer
+    if (dropHold_ > 0.0f) {
+        dropHold_ -= 1.0f / 60.0f;
     }
 
     avgBass_ = 0.992f * avgBass_ + 0.008f * bass;

@@ -94,47 +94,96 @@ std::string AudioCapture::findPulseMonitorSource() const {
         if (strlen(source) > 0) return source;
     }
 
-    std::string defaultMonitor;
+    // 1. Get running and idle sinks
+    std::string runningSink;
+    std::string idleSink;
+    FILE* sinksPipe = popen("pactl list short sinks 2>/dev/null", "r");
+    if (sinksPipe) {
+        std::array<char, 512> buffer{};
+        while (fgets(buffer.data(), buffer.size(), sinksPipe)) {
+            std::string line(buffer.data());
+            std::istringstream iss(line);
+            std::string index, name, module;
+            if (iss >> index >> name >> module) {
+                std::vector<std::string> tokens;
+                std::string token;
+                while (iss >> token) {
+                    tokens.push_back(token);
+                }
+                if (!tokens.empty()) {
+                    std::string state = tokens.back();
+                    state.erase(std::remove_if(state.begin(), state.end(), ::isspace), state.end());
+                    if (state == "RUNNING") {
+                        runningSink = name;
+                    } else if (state == "IDLE" && idleSink.empty()) {
+                        idleSink = name;
+                    }
+                }
+            }
+        }
+        pclose(sinksPipe);
+    }
+
+    // 2. Get default sink
+    std::string defaultSink;
     FILE* defaultSinkPipe = popen("pactl get-default-sink 2>/dev/null", "r");
     if (defaultSinkPipe) {
         std::array<char, 512> buffer{};
         if (fgets(buffer.data(), buffer.size(), defaultSinkPipe)) {
-            std::string sink(buffer.data());
-            sink.erase(std::remove(sink.begin(), sink.end(), '\n'), sink.end());
-            sink.erase(std::remove(sink.begin(), sink.end(), '\r'), sink.end());
-            if (!sink.empty()) {
-                defaultMonitor = sink + ".monitor";
-            }
+            defaultSink = buffer.data();
+            defaultSink.erase(std::remove(defaultSink.begin(), defaultSink.end(), '\n'), defaultSink.end());
+            defaultSink.erase(std::remove(defaultSink.begin(), defaultSink.end(), '\r'), defaultSink.end());
+            defaultSink.erase(std::remove_if(defaultSink.begin(), defaultSink.end(), ::isspace), defaultSink.end());
         }
         pclose(defaultSinkPipe);
     }
 
-    FILE* pipe = popen("pactl list short sources", "r");
-    if (!pipe) return "";
+    // 3. Collect available monitor sources
+    std::vector<std::string> availableMonitors;
+    FILE* sourcesPipe = popen("pactl list short sources 2>/dev/null", "r");
+    if (sourcesPipe) {
+        std::array<char, 512> buffer{};
+        while (fgets(buffer.data(), buffer.size(), sourcesPipe)) {
+            std::istringstream line(buffer.data());
+            std::string index;
+            std::string name;
+            if (line >> index >> name) {
+                if (name.find(".monitor") != std::string::npos) {
+                    availableMonitors.push_back(name);
+                }
+            }
+        }
+        pclose(sourcesPipe);
+    }
 
-    std::array<char, 512> buffer{};
-    std::string fallback;
-    while (fgets(buffer.data(), buffer.size(), pipe)) {
-        std::istringstream line(buffer.data());
-        std::string index;
-        std::string name;
-        line >> index >> name;
-        if (name.find(".monitor") != std::string::npos) {
-            if (name == defaultMonitor) {
-                pclose(pipe);
-                return name;
-            }
-            if (!preferredSource_.empty() && name == preferredSource_) {
-                fallback = name;
-            }
-            if (fallback.empty()) {
-                fallback = name;
-            }
+    if (availableMonitors.empty()) {
+        return "";
+    }
+
+    // 4. Construct prioritized candidates list
+    std::vector<std::string> candidates;
+    if (!runningSink.empty()) {
+        candidates.push_back(runningSink + ".monitor");
+    }
+    if (!idleSink.empty()) {
+        candidates.push_back(idleSink + ".monitor");
+    }
+    if (!preferredSource_.empty()) {
+        candidates.push_back(preferredSource_);
+    }
+    if (!defaultSink.empty()) {
+        candidates.push_back(defaultSink + ".monitor");
+    }
+
+    // Check each candidate in priority order
+    for (const auto& candidate : candidates) {
+        if (std::find(availableMonitors.begin(), availableMonitors.end(), candidate) != availableMonitors.end()) {
+            return candidate;
         }
     }
 
-    pclose(pipe);
-    return fallback;
+    // Ultimate fallback: the first available monitor source
+    return availableMonitors.front();
 }
 
 bool AudioCapture::startPulseMonitor() {

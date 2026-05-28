@@ -2,22 +2,28 @@ name: Build and Package
 
 on:
   push:
-    branches: [main]
+    branches: [main, development]
     tags: ['v*']
   release:
     types: [created]
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install GCC 11
         run: |
           sudo apt-get update
+          sudo apt-get install -y gcc-11 g++-11
+          echo "CC=gcc-11" >> $GITHUB_ENV
+          echo "CXX=g++-11" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
           sudo apt-get install -y \
             cmake \
             pkg-config \

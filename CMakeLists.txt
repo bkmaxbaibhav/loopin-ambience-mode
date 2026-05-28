@@ -125,6 +125,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         ${WAYLAND_CLIENT_LIBRARIES}
         ${CMAKE_DL_LIBS}
     )
+    # Statically embed libstdc++ and libgcc so that GLIBCXX_* symbols from the
+    # build host are not required at runtime on older distros (e.g. Ubuntu 22.04).
+    # Do NOT use -static-libc here — fully static glibc breaks NSS/locale.
+    target_link_options(loopin-ambience-mode PRIVATE
+        -static-libstdc++
+        -static-libgcc
+    )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_sources(loopin-ambience-mode PRIVATE
         src/platform/Tray.cpp
