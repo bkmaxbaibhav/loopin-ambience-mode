@@ -31,7 +31,7 @@ jobs:
             libfftw3-dev \
             libglfw3-dev \
             libgl1-mesa-dev \
-            libappindicator3-dev \
+            libayatana-appindicator3-dev \
             libwayland-dev \
             wayland-protocols \
             libwayland-bin \

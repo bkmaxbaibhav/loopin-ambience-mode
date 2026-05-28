@@ -325,7 +325,6 @@ int main(int argc, char** argv) {
     }
 
     // g. Cleanup
-    overlay.shutdown();
     capture.stop();
 
     std::cout << "loopin-ambience-mode shutdown." << std::endl;
