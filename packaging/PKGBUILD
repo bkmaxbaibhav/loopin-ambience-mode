@@ -1,10 +1,10 @@
-# Maintainer: Baibhav Kumar <baibhavkumar20@gmail.com>
+# Maintainer: Baibhav Kumar <bkmaxbaibhav@gmail.com>
 pkgname=loopin-ambience-mode
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Audio reactive ambient screen border lighting inspired by Android edge lighting"
 arch=('x86_64')
-url="https://github.com/baibhavkumar/loopin-ambience-mode"
+url="https://github.com/bkmaxbaibhav/loopin-ambience-mode"
 license=('MIT')
 depends=(
     'portaudio'
