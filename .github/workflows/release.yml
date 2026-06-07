@@ -70,11 +70,11 @@ jobs:
           chmod +x cosign-linux-amd64
           sudo mv cosign-linux-amd64 /usr/local/bin/cosign
 
-      # v3 uses a single .bundle file (replaces the old .sig + .crt pair from v2)
+      # v3 uses a single .sigstore.json bundle (replaces the old .sig + .crt pair from v2)
       - name: Sign packages (Sigstore keyless)
         run: |
-          cosign sign-blob --yes --bundle "$DEB.bundle" "$DEB"
-          cosign sign-blob --yes --bundle "$RPM.bundle" "$RPM"
+          cosign sign-blob --yes --bundle "$DEB.sigstore.json" "$DEB"
+          cosign sign-blob --yes --bundle "$RPM.sigstore.json" "$RPM"
 
       # gh CLI is GitHub's own tool — pre-installed on all GitHub-hosted runners.
       - name: Create GitHub Release
@@ -99,7 +99,7 @@ jobs:
           ### Verify binary integrity (Sigstore)
           \`\`\`bash
           cosign verify-blob <binary> \
-            --bundle <binary>.bundle \
+            --bundle <binary>.sigstore.json \
             --certificate-identity-regexp "https://github.com/bkmaxbaibhav/loopin-ambience-mode" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com
           \`\`\`
@@ -109,8 +109,8 @@ jobs:
             --prerelease \
             --title "Loopin ${GITHUB_REF_NAME} — Linux" \
             --notes-file release_notes.md \
-            "$DEB" "$DEB.bundle" \
-            "$RPM" "$RPM.bundle"
+            "$DEB" "$DEB.sigstore.json" \
+            "$RPM" "$RPM.sigstore.json"
 
       # Direct curl to VirusTotal API v3 — no third-party action.
       # API key is passed via env var so it is never interpolated into the
