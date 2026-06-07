@@ -1,6 +1,6 @@
 # loopin-ambience-mode
 
-[![Build Status](https://github.com/baibhavkumar/loopin-ambience-mode/actions/workflows/build.yml/badge.svg)](https://github.com/baibhavkumar/loopin-ambience-mode/actions/workflows/build.yml)
+[![Build Status](https://github.com/bkmaxbaibhav/loopin-ambience-mode/actions/workflows/build.yml/badge.svg)](https://github.com/bkmaxbaibhav/loopin-ambience-mode/actions/workflows/build.yml)
 
 A cross-platform desktop application that renders an ambient lighting effect along the screen edges, reacting in real-time to system audio.
 
@@ -10,7 +10,7 @@ A cross-platform desktop application that renders an ambient lighting effect alo
 
 ### Ubuntu/Debian
 ```bash
-wget https://github.com/baibhavkumar/loopin-ambience-mode/releases/latest/download/loopin-ambience-mode-0.1.0-Linux.deb
+wget https://github.com/bkmaxbaibhav/loopin-ambience-mode/releases/latest/download/loopin-ambience-mode-0.1.0-Linux.deb
 sudo dpkg -i loopin-ambience-mode-0.1.0-Linux.deb
 ```
 
@@ -21,7 +21,7 @@ yay -S loopin-ambience-mode
 
 ### Fedora
 ```bash
-sudo rpm -ivh https://github.com/baibhavkumar/loopin-ambience-mode/releases/latest/download/loopin-ambience-mode-0.1.0-1.x86_64.rpm
+sudo rpm -ivh https://github.com/bkmaxbaibhav/loopin-ambience-mode/releases/latest/download/loopin-ambience-mode-0.1.0-1.x86_64.rpm
 ```
 
 ## Dependencies

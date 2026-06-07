@@ -191,7 +191,7 @@ install(FILES
 set(CPACK_GENERATOR "DEB;RPM")
 set(CPACK_PACKAGE_NAME "loopin-ambience-mode")
 set(CPACK_PACKAGE_VERSION "0.1.0")
-set(CPACK_PACKAGE_CONTACT "baibhavkumar20@gmail.com")
+set(CPACK_PACKAGE_CONTACT "bkmaxbaibhav@gmail.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Audio reactive ambient screen border lighting")
 set(CPACK_PACKAGE_DESCRIPTION "loopin-ambience-mode renders a beautiful ambient glow along your screen edges that reacts in real-time to system audio output. Inspired by Android edge lighting.")
 
@@ -199,7 +199,7 @@ set(CPACK_PACKAGE_DESCRIPTION "loopin-ambience-mode renders a beautiful ambient 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libportaudio2, libfftw3-single3, libglfw3, libappindicator3-1, libx11-6, libxfixes3, pulseaudio-utils")
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/baibhavkumar/loopin-ambience-mode")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/bkmaxbaibhav/loopin-ambience-mode")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Baibhav Kumar")
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/packaging/postinst")
 
