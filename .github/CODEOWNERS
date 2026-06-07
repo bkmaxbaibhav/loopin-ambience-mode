@@ -1,0 +1,4 @@
+# Only the repo owner can approve changes to CI/CD workflows.
+# Any PR that touches .github/workflows/ requires a review from
+# @bkmaxbaibhav before it can be merged.
+/.github/workflows/ @bkmaxbaibhav
