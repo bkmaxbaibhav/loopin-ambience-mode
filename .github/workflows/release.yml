@@ -105,6 +105,9 @@ jobs:
           \`\`\`
           NOTES
 
+          # Delete any stale release for this tag so re-runs don't 422
+          gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
+
           gh release create "$GITHUB_REF_NAME" \
             --prerelease \
             --title "Loopin ${GITHUB_REF_NAME} — Linux" \
